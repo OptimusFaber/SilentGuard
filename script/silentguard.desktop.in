@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Terminal=false
+Type=Application
+Name=SilentGuard
+Categories=Network;
+Comment=Cross-platform proxy client (sing-box core)
+Comment[zh_CN]=跨平台统一代理客户端（sing-box 内核）
+Keywords=Internet;VPN;Proxy;sing-box;Shadowsocks;
+Exec=@START@
+Icon=@ICON@

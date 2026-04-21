@@ -1,0 +1,9 @@
+[submodule "core/server/sing-box"]
+	path = core/server/sing-box
+	url = https://github.com/qr243vbi/sing-box
+[submodule "3rdparty/QHotkey"]
+	path = 3rdparty/QHotkey
+	url = https://github.com/qr243vbi/QHotkey
+[submodule "3rdparty/lmdbxx"]
+	path = 3rdparty/lmdbxx
+	url = https://github.com/qr243vbi/lmdbxx

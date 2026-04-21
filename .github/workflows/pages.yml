@@ -1,0 +1,29 @@
+# On every push this script is executed
+on: 
+  workflow_dispatch:
+  release:
+    types: [created]
+name: Build and deploy GH Pages
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          ref: 'main'
+
+      - name: pre_build
+        run: |
+          data="$( cat ./pages/content/introduction/_index.md ; echo ; cat ./README.md ; )"
+          echo "$data" > ./pages/content/introduction/_index.md
+
+      - name: build_and_deploy
+        uses: DeadPoetSpoon/zola-deploy-action@master
+        env:
+          BUILD_DIR: ./pages
+          PAGES_BRANCH: pages
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}

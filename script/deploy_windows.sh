@@ -1,0 +1,140 @@
+#!/bin/bash -x
+set -e
+
+source script/env_deploy.sh
+export CURDIR="$SRC_ROOT"
+
+if [[ $1 == "x86_64" || -z $1 ]]; then
+  ARCH="windows64"
+  CROSS="windows-amd64"
+  NAIVE="amd64"
+  INST="$DEPLOYMENT/silentguard_setup"
+else if [[ $1 == "arm64" ]]; then
+  ARCH="windows-arm64"
+  CROSS=$ARCH
+  NAIVE="arm64"
+  INST="$DEPLOYMENT/silentguard_setup_arm64"
+else if [[ $1 == "i686" || $1 == "x86" ]]; then
+  ARCH="windows32"
+  CROSS="windows-386"
+  NAIVE="false"
+  INST="$DEPLOYMENT/silentguard_setup32"
+fi; fi; fi;
+
+export DEST="$DEPLOYMENT/$ARCH"
+mkdir -p "$DEST"
+
+if [[ -d download-artifact ]]
+then
+(
+ cd download-artifact
+ cd *"$CROSS"
+ tar xvzf artifacts.tgz -C .
+ mv "deployment/$ARCH/"* "$DEST"
+) ||:
+fi
+
+pushd "$SRC_ROOT"
+
+#### get the pdb ####
+#if [[ "$COMPILER" == "MinGW" ]]
+#then
+#curl -fLJO https://github.com/rainers/cv2pdb/releases/download/v0.53/cv2pdb-0.53.zip
+#7z x cv2pdb-0.53.zip -ocv2pdb
+#./cv2pdb/cv2pdb64.exe ./build/silentguard.exe ./tmp.exe ./silentguard.pdb
+#rm -rf cv2pdb-0.53.zip cv2pdb
+#cd build
+#strip -s silentguard.exe
+#cd ..
+#rm tmp.exe ||:
+#mv silentguard.pdb $DEST
+#fi
+
+#### copy srslist ####
+if [[ ! -f srslist.json ]]
+then
+curl -fLso srslist.json "https://github.com/qr243vbi/ruleset/raw/refs/heads/rule-set/srslist.json"
+fi
+cp srslist.json "$DEST/srslist.json"
+
+#### copy exe ####
+rel="$BUILD"
+if [[ -f "$BUILD/Release/silentguard.exe" ]]
+then
+  rel="$BUILD/Release"
+fi
+
+cp "$rel/silentguard.exe" "$DEST"
+#cp "$rel/elevated_launcher.exe" "$DEST"
+touch "$rel/silentguard.dll"
+cp "$rel/"*.dll  "$DEST"
+
+[[ -f "$BUILD/silentguard_core.exe" ]] && cp "$BUILD/silentguard_core.exe" "$DEST" 
+[[ -f "$BUILD/updater.exe" ]] && cp "$BUILD/updater.exe" "$DEST"
+
+if [[ "$NAIVE" != "false" ]]
+then
+
+if [[ ! -f "libcronet-windows-${NAIVE}.dll" ]]
+then
+curl -L -o "libcronet-windows-${NAIVE}.dll" "https://github.com/SagerNet/cronet-go/releases/download/$(curl -s -L https://api.github.com/repos/SagerNet/cronet-go/releases/latest | jq -r .tag_name)/libcronet-windows-${NAIVE}.dll"
+fi
+cp "libcronet-windows-${NAIVE}.dll"  "$DEST/libcronet.dll"
+
+fi
+
+cp -RT "$CURDIR/res/public" "$DEST/public"
+cp "$BUILD/"*.qm "$CURDIR/res/languages.txt" "$DEST/public/"
+
+if [[ "$COMPILER" != "MinGW" ]]
+then
+pushd $DEST
+windeployqt silentguard.exe --no-translations --no-system-d3d-compiler --no-compiler-runtime --no-opengl-sw --verbose 2
+rm -rf dxcompiler.dll dxil.dll ||:
+popd
+fi
+
+(
+cd "$CURDIR"
+pwd
+
+rm "$DEST/icu"*.dll ||:
+
+if [[ "$SKIP_UPX" != "true" ]]
+then
+if command -v upx
+then
+#upx -9 "$DEST/silentguard.exe"         ||:
+pushd "$DEST"
+upx *.dll *.exe ||:
+popd
+fi
+fi
+
+if [[ "$SKIP_NSIS" != "true" ]]
+then
+makensis.exe "-DSOFTWARE_VERSION=$INPUT_VERSION" "-DSOFTWARE_NAME=SilentGuard" "-DDIRECTORY=$DEST" "-DOUTFILE=$INST" "-NOCD" 'script/windows_installer.nsi'
+fi
+
+pushd "$DEPLOYMENT"
+
+if [[ "$SKIP_NSIS" != "true" ]]
+then
+mv "$INST" "$version_standalone-$ARCH-installer.exe"
+fi
+
+
+if [[ "$SKIP_ZIP" == 'true' ]]
+then
+mv "$ARCH" "$version_standalone-$ARCH"
+else
+mv "$ARCH" silentguard
+zip -9 -r "$version_standalone-$ARCH.zip" silentguard
+rm -rf silentguard
+fi
+
+popd
+
+)
+
+popd

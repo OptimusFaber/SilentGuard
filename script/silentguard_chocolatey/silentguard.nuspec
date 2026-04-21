@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2015/06/nuspec.xsd">
+  <metadata>
+    <id>silentguard</id>
+    <version>0.0.0</version>
+    <title>SilentGuard (Install)</title>
+    <authors>SilentGuard contributors</authors>
+	<licenseUrl>https://www.gnu.org/licenses/gpl-3.0.txt</licenseUrl>
+	<iconUrl>https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/SilentGuard/refs/heads/main/res/public/icon.png</iconUrl>
+    <projectUrl>https://github.com/YOUR_GITHUB_USERNAME/SilentGuard</projectUrl>
+    <projectSourceUrl>https://github.com/YOUR_GITHUB_USERNAME/SilentGuard</projectSourceUrl>
+    <packageSourceUrl>https://github.com/YOUR_GITHUB_USERNAME/SilentGuard/tree/main/script/silentguard_chocolatey</packageSourceUrl>
+    <tags>silentguard proxy</tags>
+    <summary>SilentGuard for Windows</summary>
+	<releaseNotes />
+    <mailingListUrl>https://github.com/YOUR_GITHUB_USERNAME/SilentGuard/discussions</mailingListUrl>
+    <docsUrl>https://github.com/YOUR_GITHUB_USERNAME/SilentGuard/blob/main/README.md</docsUrl>
+    <bugTrackerUrl>https://github.com/YOUR_GITHUB_USERNAME/SilentGuard/issues</bugTrackerUrl>
+    <description>Qt-based cross-platform GUI proxy configuration manager (sing-box backend).</description>
+	<dependencies>
+     <dependency id="vcredist140" version="14.0.0"/>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="tools\**" target="tools"></file>
+  </files>
+</package>
