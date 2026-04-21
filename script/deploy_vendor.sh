@@ -4,7 +4,7 @@ pushd "$SRC_ROOT"
 
 pushd core/server
 pushd gen
- ./update_libs.sh
+bash update_libs.sh
 popd
 
 if [[ ! -f srslist.json ]]

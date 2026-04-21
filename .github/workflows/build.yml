@@ -144,6 +144,12 @@ jobs:
         with:
           ref: ${{ github.ref }}
           submodules: 'true'
+      - name: Make shell scripts executable
+        if: matrix.cross_os == 'public' || ( github.event.inputs.source_only  != 'true' && matrix.allow == 'true' )
+        shell: bash
+        run: |
+          chmod +x script/*.sh
+          if [[ -f core/server/gen/update_libs.sh ]]; then chmod +x core/server/gen/update_libs.sh; fi
       - name: Cache Common Download
         id: cache-common
         if: matrix.cross_os != 'public' && ( github.event.inputs.source_only  != 'true' && matrix.allow == 'true' )
@@ -173,7 +179,7 @@ jobs:
           else
             export SKIP_UPDATER=OFF
           fi
-          GO_MOD_TIDY=ON GOOS=${{ matrix.cross_os }} GOARCH=${{ matrix.cross_arch }} ./script/build_go.sh
+          GO_MOD_TIDY=ON GOOS=${{ matrix.cross_os }} GOARCH=${{ matrix.cross_arch }} bash script/build_go.sh
       - name: Build vendor
         if: matrix.cross_os == 'public'
         shell: bash
@@ -215,6 +221,12 @@ jobs:
         with:
           ref: ${{ github.ref }}
           submodules: 'true'
+
+      - name: Make shell scripts executable
+        shell: bash
+        run: |
+          chmod +x script/*.sh
+          if [[ -f core/server/gen/update_libs.sh ]]; then chmod +x core/server/gen/update_libs.sh; fi
 
       - name: Create requirements.txt, add ssh key
         shell: bash
@@ -332,6 +344,13 @@ jobs:
           ref: ${{ github.ref }}
           submodules: "true"
 
+      - name: Make shell scripts executable
+        if: matrix.allow == 'true' && github.event.inputs.source_only != 'true'
+        shell: bash
+        run: |
+          chmod +x script/*.sh
+          if [[ -f core/server/gen/update_libs.sh ]]; then chmod +x core/server/gen/update_libs.sh; fi
+
       - name: Setup Ninja
         if: matrix.allow == 'true' && github.event.inputs.source_only != 'true'
         uses: qr243vbi/setup-ninja@master
@@ -410,7 +429,7 @@ jobs:
           if [[ ${{ github.event.inputs.skip_updater }} == 'true' ]]; then export SKIP_UPDATE_BUTTON=ON; else export SKIP_UPDATE_BUTTON=OFF; fi
           cmake -DBUILD_GO_PARTS=ON -GNinja -DCMAKE_TOOLCHAIN_FILE="${TOOLCHAIN}" '-DVCPKG_TARGET_TRIPLET=${{ matrix.triplet }}' -DVCPKG_MANIFEST_MODE=OFF -DSKIP_UPDATER="${SKIP_UPDATE_BUTTON}" -DCMAKE_BUILD_TYPE=Release "-DNKR_DEFAULT_VERSION=${INPUT_VERSION}" "-DBUILD_GO_PARTS=OFF" -S . -B build
           cmake --build build --config Release --verbose
-          ./script/deploy_windows.sh "${{ matrix.target }}"
+          bash script/deploy_windows.sh "${{ matrix.target }}"
 
       - name: Tar files
         shell: bash
