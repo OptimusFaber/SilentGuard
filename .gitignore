@@ -14,9 +14,9 @@ easytier-magisk
 server/gen/*.pb.go
 server/gen/*.pb.*.go
 script/silentguard_chocolatey/_TODO.txt
-!languages.txt
-!CMakeLists.txt
 /*.txt
+!CMakeLists.txt
+!languages.txt
 !/core/CMakeLists.txt
 core/build
 core/TEMP
