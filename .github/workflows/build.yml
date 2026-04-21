@@ -140,16 +140,28 @@ jobs:
     steps:
       - name: Checking out sources
         if: matrix.cross_os == 'public' || ( github.event.inputs.source_only  != 'true' && matrix.allow == 'true' )
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-          submodules: 'true'
+          submodules: recursive
+          fetch-depth: 0
       - name: Make shell scripts executable
         if: matrix.cross_os == 'public' || ( github.event.inputs.source_only  != 'true' && matrix.allow == 'true' )
         shell: bash
         run: |
           chmod +x script/*.sh
           if [[ -f core/server/gen/update_libs.sh ]]; then chmod +x core/server/gen/update_libs.sh; fi
+      - name: Initialize submodules (sing-box, 3rdparty)
+        if: matrix.cross_os == 'public' || ( github.event.inputs.source_only  != 'true' && matrix.allow == 'true' )
+        shell: bash
+        run: |
+          git submodule sync --recursive
+          git submodule update --init --force --recursive
+          if [[ ! -f core/server/sing-box/go.mod ]]; then
+            echo "::error::Submodule core/server/sing-box is empty or not registered. On your PC run: git submodule update --init --recursive"
+            echo "::error::Then commit the submodule pointer: git add .gitmodules core/server/sing-box && git commit -m 'chore: add sing-box submodule' && git push"
+            exit 1
+          fi
       - name: Cache Common Download
         id: cache-common
         if: matrix.cross_os != 'public' && ( github.event.inputs.source_only  != 'true' && matrix.allow == 'true' )
@@ -217,16 +229,23 @@ jobs:
     if: github.event.inputs.publish == 'true' && github.event.inputs.binary_only == 'false' && (github.event.inputs.publish_aur == 'true' || github.event.inputs.publish_obs == 'true' || github.event.inputs.publish_copr == 'true' || github.event.inputs.publish_suse == 'true')
     steps:
       - name: Checking out sources
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-          submodules: 'true'
+          submodules: recursive
+          fetch-depth: 0
 
       - name: Make shell scripts executable
         shell: bash
         run: |
           chmod +x script/*.sh
           if [[ -f core/server/gen/update_libs.sh ]]; then chmod +x core/server/gen/update_libs.sh; fi
+
+      - name: Initialize submodules
+        shell: bash
+        run: |
+          git submodule sync --recursive
+          git submodule update --init --force --recursive
 
       - name: Create requirements.txt, add ssh key
         shell: bash
@@ -339,10 +358,11 @@ jobs:
     steps:
       - name: Checking out sources
         if: matrix.allow == 'true' && github.event.inputs.source_only != 'true'
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-          submodules: "true"
+          submodules: recursive
+          fetch-depth: 0
 
       - name: Make shell scripts executable
         if: matrix.allow == 'true' && github.event.inputs.source_only != 'true'
@@ -350,6 +370,13 @@ jobs:
         run: |
           chmod +x script/*.sh
           if [[ -f core/server/gen/update_libs.sh ]]; then chmod +x core/server/gen/update_libs.sh; fi
+
+      - name: Initialize submodules
+        if: matrix.allow == 'true' && github.event.inputs.source_only != 'true'
+        shell: bash
+        run: |
+          git submodule sync --recursive
+          git submodule update --init --force --recursive
 
       - name: Setup Ninja
         if: matrix.allow == 'true' && github.event.inputs.source_only != 'true'
@@ -481,10 +508,18 @@ jobs:
     steps:
       - name: Checking out sources
         if: matrix.allow == 'true' && github.event.inputs.source_only != 'true'
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-          submodules: "true"
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Initialize submodules
+        if: matrix.allow == 'true' && github.event.inputs.source_only != 'true'
+        shell: bash
+        run: |
+          git submodule sync --recursive
+          git submodule update --init --force --recursive
 
       - name: Download Artifacts
         if: matrix.allow == 'true' && github.event.inputs.source_only != 'true'
@@ -687,10 +722,16 @@ jobs:
     if: github.event.inputs.publish == 'true' && github.event.inputs.source_only != 'true'
     steps:
       - name: Checking out sources
-        uses: actions/checkout@main
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-          submodules: "true"
+          submodules: recursive
+          fetch-depth: 0
+      - name: Initialize submodules
+        shell: bash
+        run: |
+          git submodule sync --recursive
+          git submodule update --init --force --recursive
       - name: Download Artifacts
         uses: actions/download-artifact@main
         with:
