@@ -752,9 +752,20 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           source script/env_deploy.sh
-          find . -name artifacts.tgz | xargs -n1 tar xvzf
+          mapfile -t TGZS < <(find . -name artifacts.tgz)
+          if [[ ${#TGZS[@]} -eq 0 ]]; then
+            echo "::error::No artifacts.tgz found under workspace (did any matrix upload artifacts?)"
+            exit 1
+          fi
+          for f in "${TGZS[@]}"; do tar xvzf "$f"; done
           ##
+          if [[ ! -d deployment ]]; then
+            echo "::error::After extracting artifacts, deployment/ is missing"
+            exit 1
+          fi
           cd deployment
+          echo "deployment/ after merging artifacts:"
+          ls -la
           ####
           if [[ -f "$version_standalone-windows64-installer.exe" ]]; then
             gh release upload "${INPUT_VERSION}" "$version_standalone-windows64-installer.exe" --clobber
@@ -769,6 +780,22 @@ jobs:
           if [[ -f "$version_standalone-windows32-installer.exe" ]]; then
             gh release upload "${INPUT_VERSION}" "$version_standalone-windows32-installer.exe" --clobber
             gh release upload "${INPUT_VERSION}" "$version_standalone-windows32.zip" --clobber
+          fi
+          MISSING=0
+          if [[ '${{ github.event.inputs.build_windows_x64 }}' == 'true' && ! -f "$version_standalone-windows64-installer.exe" ]]; then
+            echo "::error::Windows x64 build was requested but $version_standalone-windows64-installer.exe is missing (check Build windows binaries job / NSIS)."
+            MISSING=1
+          fi
+          if [[ '${{ github.event.inputs.build_windows_arm64 }}' == 'true' && ! -f "$version_standalone-windows-arm64-installer.exe" ]]; then
+            echo "::error::Windows ARM64 build was requested but $version_standalone-windows-arm64-installer.exe is missing."
+            MISSING=1
+          fi
+          if [[ '${{ github.event.inputs.build_windows_x86 }}' == 'true' && ! -f "$version_standalone-windows32-installer.exe" ]]; then
+            echo "::error::Windows x86 build was requested but $version_standalone-windows32-installer.exe is missing."
+            MISSING=1
+          fi
+          if [[ "$MISSING" -ne 0 ]]; then
+            exit 1
           fi
           if [[ '${{ github.event.inputs.publish_winget }}' == 'true' && -f $version_standalone-windows32.zip && -f $version_standalone-windows64.zip && -f $version_standalone-windows-arm64.zip ]]
           then
