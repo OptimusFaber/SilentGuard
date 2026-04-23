@@ -1,23 +1,23 @@
 <RCC>
     <qresource prefix="/">
-        <file alias="brand/logo-mark.png">public/logo-mark.png</file>
-        <file alias="brand/logo-mark-light.png">public/logo-mark-light.png</file>
-        <file alias="icon/b-internet-web-browser.png">icon/internet-web-browser.png</file>
-        <file alias="icon/b-system-run.png">icon/system-run.png</file>
-        <file alias="icon/b-preferences.png">icon/preferences.png</file>
-        <file alias="icon/b-network-server.png">icon/network-server.png</file>
-        <file alias="icon/b-dialog-question.png">icon/dialog-question.png</file>
-        <file alias="icon/b-system-software-update.png">icon/system-software-update.png</file>
-        <file alias="icon/b-network-routing.png">icon/network-routing.png</file>
-        <file alias="icon/b-system-security.png">icon/system-security.png</file>
-        <file alias="icon/b-update.png">icon/update.png</file>
-        <file>icon/material/lock-open-outline.png</file>
-        <file>icon/material/lock-outline.png</file>
-        <file>icon/material/cancel.png</file>
-        <file>icon/material/history.png</file>
-        <file>icon/material/swap-vertical.png</file>
-        <file>icon/material/delete.png</file>
-        <file>icon/material/swap-horizontal.png</file>
+        <file alias="brand/logo-mark.svg">brand/svg/logo-blue..svg</file>
+        <file alias="brand/logo-mark-light.svg">brand/svg/logo-no-back-ground.svg</file>
+        <file alias="icon/b-internet-web-browser.svg">brand/svg/internet-web-browser.svg</file>
+        <file alias="icon/b-system-run.svg">brand/svg/system-run.svg</file>
+        <file alias="icon/b-preferences.svg">brand/svg/preferences.svg</file>
+        <file alias="icon/b-network-server.svg">brand/svg/routing.svg</file>
+        <file alias="icon/b-dialog-question.svg">brand/svg/dialog-question.svg</file>
+        <file alias="icon/b-system-software-update.svg">brand/svg/system-software-update.svg</file>
+        <file alias="icon/b-network-routing.svg">brand/svg/network-routing.svg</file>
+        <file alias="icon/b-system-security.svg">brand/svg/system-security.svg</file>
+        <file alias="icon/b-update.svg">brand/svg/update.svg</file>
+        <file>icon/material/lock-open-outline.svg</file>
+        <file>icon/material/lock-outline.svg</file>
+        <file>icon/material/cancel.svg</file>
+        <file>icon/material/history.svg</file>
+        <file>icon/material/swap-vertical.svg</file>
+        <file>icon/material/delete.svg</file>
+        <file>icon/material/swap-horizontal.svg</file>
     </qresource>
     <qresource prefix="/systray">
         <file>dashboard-notice.html</file>
