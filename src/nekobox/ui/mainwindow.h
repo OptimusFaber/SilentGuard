@@ -178,7 +178,7 @@ public:
 
     void set_icons();
 
-    void updateBrandMark();
+    void refreshToolbarIcons();
 
     void set_icons_from_settings();
 
@@ -234,8 +234,6 @@ private slots:
     void on_menu_basic_settings_triggered();
 
     void on_menu_information_triggered();
-
-    void on_menu_about_triggered();
 
     void on_menu_routing_settings_triggered();
 

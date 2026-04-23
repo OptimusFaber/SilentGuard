@@ -84,6 +84,7 @@
 #include <QThread>
 #include <QTimer>
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+#include <QGuiApplication>
 #include <QStyleHints>
 #endif
 #include <nekobox/global/DeviceDetailsHelper.hpp>
@@ -120,38 +121,62 @@ extern QVariantMap ruleSetMap;
 
 void setAppIcon(Icon::TrayIconStatus, QSystemTrayIcon *, MainWindow *window);
 
-void MainWindow::set_icons() { set_icons_from_settings(); }
+namespace {
 
-void MainWindow::updateBrandMark() {
-  if (ui->label_brand_mark == nullptr) {
-    return;
+/** Light monochrome toolbar icons on dark surfaces (Dark / AMOLED / Windows11 dark). */
+bool toolbarIconsLightOnDark(const QString &theme) {
+  const QString t = theme.toLower();
+  if (t == "dark" || t == "amoled")
+    return true;
+  if (t == "windows11") {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+    return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
+#else
+    return ::isDarkMode();
+#endif
   }
-  QString theme = themeManager->current_theme.isEmpty()
-                      ? Configs::windowSettings->theme
-                      : themeManager->current_theme;
-  int mode = ThemeManager::getMode(theme);
-  bool light = false;
-  if (mode == 2) {
-    light = true;
-  } else if (mode == 1) {
-    light = false;
-  } else {
-    light = !isDarkMode();
-  }
-  const QString path =
-      light ? QStringLiteral(":/brand/logo-mark-light.svg")
-            : QStringLiteral(":/brand/logo-mark.svg");
-  QSvgRenderer renderer(path);
-  if (!renderer.isValid()) {
-    return;
-  }
-  const QSize sz(36, 36);
+  return false;
+}
+
+QIcon tintedToolbarIcon(const QString &resourcePath, bool lightOnDark) {
+  if (!lightOnDark)
+    return QIcon(resourcePath);
+  QSvgRenderer renderer(resourcePath);
+  if (!renderer.isValid())
+    return QIcon(resourcePath);
+  const QSize sz(48, 48);
   QImage img(sz, QImage::Format_ARGB32);
   img.fill(Qt::transparent);
   QPainter p(&img);
   renderer.render(&p, QRectF(0, 0, sz.width(), sz.height()));
+  p.setCompositionMode(QPainter::CompositionMode_SourceIn);
+  p.fillRect(img.rect(), QColor(0xEB, 0xEC, 0xEF));
   p.end();
-  ui->label_brand_mark->setPixmap(QPixmap::fromImage(img));
+  return QIcon(QPixmap::fromImage(img));
+}
+
+} // namespace
+
+void MainWindow::set_icons() {
+  set_icons_from_settings();
+  refreshToolbarIcons();
+}
+
+void MainWindow::refreshToolbarIcons() {
+  const QString theme = themeManager->current_theme.isEmpty()
+                            ? Configs::windowSettings->theme
+                            : themeManager->current_theme;
+  const bool light = toolbarIconsLightOnDark(theme);
+  ui->toolButton_program->setIcon(
+      tintedToolbarIcon(QStringLiteral(":/icon/b-system-run.svg"), light));
+  ui->toolButton_server->setIcon(
+      tintedToolbarIcon(QStringLiteral(":/icon/b-network-server.svg"), light));
+  ui->toolButton_preferences->setIcon(
+      tintedToolbarIcon(QStringLiteral(":/icon/b-preferences.svg"), light));
+  ui->toolButton_routing->setIcon(
+      tintedToolbarIcon(QStringLiteral(":/icon/b-network-routing.svg"), light));
+  ui->toolButton_update->setIcon(
+      tintedToolbarIcon(QStringLiteral(":/icon/b-system-software-update.svg"), light));
 }
 
 SelectDialog::SelectDialog(QWidget *parent,
@@ -677,7 +702,7 @@ MainWindow::MainWindow(QWidget *parent)
               // bi-mode themes, follow system preference
             }
             new SyntaxHighlighter(darkMode, qvLogDocument);
-            updateBrandMark();
+            refreshToolbarIcons();
             refresh_proxy_list(-1);
           });
 
@@ -727,10 +752,9 @@ MainWindow::MainWindow(QWidget *parent)
             new SyntaxHighlighter(scheme == Qt::ColorScheme::Dark,
                                   qvLogDocument);
             themeManager->ApplyTheme(theme, true);
-            updateBrandMark();
+            refreshToolbarIcons();
           });
 #endif
-  updateBrandMark();
   connect(ui->data_view, &QTextBrowser::textChanged, [this]() {
     QTextDocument *document = ui->data_view->document();
     int height, toolbox_height;
@@ -934,7 +958,7 @@ MainWindow::MainWindow(QWidget *parent)
     }
   }
 
-  set_icons_from_settings();
+  set_icons();
 
   connect(ui->actionAdd_new_Group, &QAction::triggered, this,
           [this] { this->on_menu_add_new_group_triggered(); });
@@ -943,7 +967,26 @@ MainWindow::MainWindow(QWidget *parent)
   ui->toolButton_server->setMenu(ui->menu_profiles);
   ui->toolButton_routing->setMenu(ui->menuRouting_Menu);
   ui->url_test_button->setMenu(ui->menuTest);
-  ui->toolButton_update->setMenu(ui->fetch_tool);
+
+  connect(ui->pushButton_site_url_test_group, &QPushButton::clicked, this,
+          [this]() {
+            CHECK_ACTION_ACCESS_W
+            ui->actionUrl_Test_Group->trigger();
+          });
+  connect(ui->pushButton_site_url_test_running, &QPushButton::clicked, this,
+          [this]() {
+            CHECK_ACTION_ACCESS_W
+            url_test_current();
+          });
+  connect(ui->pushButton_site_full_test_group, &QPushButton::clicked, this,
+          [this]() {
+            CHECK_ACTION_ACCESS_W
+            speedtest_current_group(
+                Configs::profileManager->CurrentGroup()->GetProfileEnts(),
+                false, Configs::TestConfig::FULL);
+          });
+  connect(ui->pushButton_site_resolve_domain, &QPushButton::clicked, this,
+          &MainWindow::on_menu_resolve_domain_triggered);
 
   {
     auto menu_profiles = ui->menu_profiles;
@@ -976,8 +1019,9 @@ MainWindow::MainWindow(QWidget *parent)
 
   ui->menubar->setVisible(false);
 #ifndef SKIP_UPDATE_BUTTON
-  connect(ui->menu_update, &QAction::triggered, this,
-          [=, this] { runOnNewThread([=, this] { CheckUpdate(true); }); });
+  connect(ui->toolButton_update, &QToolButton::clicked, this, [=, this] {
+    runOnNewThread([=, this] { CheckUpdate(true); });
+  });
 #ifndef SKIP_JS_UPDATER
   if (!QFile::exists(getResource("check_new_release.js"))) {
     goto updater_hide;
@@ -989,7 +1033,7 @@ MainWindow::MainWindow(QWidget *parent)
 
   goto skip_updater_hide;
 updater_hide:
-  ui->fetch_tool->removeAction(ui->menu_update);
+  ui->toolButton_update->hide();
   Configs::windowSettings->startup_update = 4;
 
 skip_updater_hide:
@@ -1574,6 +1618,17 @@ skip_updater_hide:
   connect(ui->actionUrl_Test_Group, &QAction::triggered, this,
           url_test_group_action);
 
+  connect(ui->menu_url_test, &QAction::triggered, this, [this]() {
+    CHECK_ACTION_ACCESS_W
+    ui->actionUrl_Test_Group->trigger();
+  });
+  connect(ui->menu_full_test, &QAction::triggered, this, [this]() {
+    CHECK_ACTION_ACCESS_W
+    speedtest_current_group(
+        Configs::profileManager->CurrentGroup()->GetProfileEnts(), false,
+        Configs::TestConfig::FULL);
+  });
+
   connect(ui->actionSpeedtest_Current, &QAction::triggered, this, [=, this]() {
     if (running != nullptr) {
       CHECK_ACTION_ACCESS_W
@@ -2080,8 +2135,6 @@ void MainWindow::on_menu_basic_settings_triggered() {
 }
 
 void MainWindow::on_menu_information_triggered() { USE_DIALOG(InfoDialog) }
-
-void MainWindow::on_menu_about_triggered() { USE_DIALOG(AboutDialog) }
 
 void MainWindow::on_menu_manage_groups_triggered() {
   USE_DIALOG(DialogManageGroups)
