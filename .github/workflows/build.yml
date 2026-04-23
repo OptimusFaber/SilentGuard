@@ -603,11 +603,15 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # deploy_linux64.sh may leave artifacts only under deployment/linux-<arch>/ if a later step fails
-          mapfile -t _linux_assets < <(find ./deployment -type f 2>/dev/null | sort -u)
+          # Match only bundles (same as build_docker.sh); also pick up stray outputs in repo root if
+          # an old/bad DEPLOYMENT pointed at SRC_ROOT.
+          mapfile -t _linux_assets < <(find ./deployment -maxdepth 1 -type f \( -name '*.tar.gz' -o -name '*.AppImage' \) 2>/dev/null | sort -u)
           if [[ ${#_linux_assets[@]} -eq 0 ]]; then
-            echo "::error::No files under ./deployment after docker build (${{ matrix.target }}). List tree:"
-            find ./deployment -print 2>/dev/null || true
+            mapfile -t _linux_assets < <(find . -maxdepth 1 -type f \( -name 'silentguard-*.tar.gz' -o -name 'silentguard-*.AppImage' -o -name '*-linux.AppImage' \) 2>/dev/null | sort -u)
+          fi
+          if [[ ${#_linux_assets[@]} -eq 0 ]]; then
+            echo "::error::No Linux bundles (.tar.gz / .AppImage) under ./deployment or repo root after docker build (${{ matrix.target }})"
+            find ./deployment -maxdepth 3 -print 2>/dev/null || true
             ls -la . || true
             exit 1
           fi

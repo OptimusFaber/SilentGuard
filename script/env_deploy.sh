@@ -21,7 +21,15 @@ fi
 # skipped then — ensure paths are never empty (empty DEPLOYMENT makes DEST="/linux-amd64" and
 # artifacts land outside the bind mount).
 : "${SRC_ROOT:=${PWD:-.}}"
-: "${DEPLOYMENT:=$SRC_ROOT/deployment}"
 : "${BUILD:=$SRC_ROOT/build}"
 : "${version_standalone:=silentguard-${INPUT_VERSION:-0.0.0}}"
 : "${archive_standalone:=silentguard-unified-source-${INPUT_VERSION:-0.0.0}}"
+# If DEPLOYMENT is empty, "/", or the same path as SRC_ROOT (e.g. bad .ENV), bundles would land in
+# the repo root and `find $DEPLOYMENT -type f` would match any tracked file — checks pass but
+# ./deployment stays empty. Do not force "$SRC_ROOT/deployment" when SRC_ROOT is already under
+# deployment/ (unified tarball build): then DEPLOYMENT must stay the parent .../deployment.
+case "${DEPLOYMENT}" in
+  ''|'/'|"$SRC_ROOT")
+    DEPLOYMENT="$SRC_ROOT/deployment"
+    ;;
+esac
