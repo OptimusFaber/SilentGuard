@@ -3,27 +3,38 @@ source script/env_deploy.sh
 export CURDIR="$SRC_ROOT"
 
 set -e
+# linuxdeploy / appimagetool are AppImages; CI Docker often needs extract-and-run even with /dev/fuse
+export APPIMAGE_EXTRACT_AND_RUN="${APPIMAGE_EXTRACT_AND_RUN:-1}"
 
 UNAME="${UNAME:-$(uname -m)}"
 
-if [[ "${UNAME}" == 'aarch64' || "${UNAME}" == 'arm64' ]]; then
-  ARCH="arm64"
-  ARCH1="aarch64"
-  NAIVE=true
-else if [[ "${UNAME}" == 'amd64' || "${UNAME}" == 'x86_64' ]]; then
-  ARCH="amd64"
-  ARCH1="x86_64"
-  NAIVE=true
-else if [[ "${UNAME}" == '386' ]]; then
-  ARCH="386"
-  ARCH1="i686"
-  ARCH2='i386'
-  NAIVE=false
-else if [[ "${UNAME}" == 'arm' ]]; then
-  ARCH="arm"
-  ARCH1="armhf"
-  NAIVE=false
-fi; fi; fi; fi
+case "${UNAME}" in
+  aarch64|arm64)
+    ARCH="arm64"
+    ARCH1="aarch64"
+    NAIVE=true
+    ;;
+  amd64|x86_64)
+    ARCH="amd64"
+    ARCH1="x86_64"
+    NAIVE=true
+    ;;
+  386|i686|i386)
+    ARCH="386"
+    ARCH1="i686"
+    ARCH2='i386'
+    NAIVE=false
+    ;;
+  arm|armv7l|armhf)
+    ARCH="arm"
+    ARCH1="armhf"
+    NAIVE=false
+    ;;
+  *)
+    echo "deploy_linux64: unknown UNAME=${UNAME} (set UNAME in .ENV or use a supported machine)" >&2
+    exit 1
+    ;;
+esac
 
 ARCH2="${ARCH2:-$ARCH1}"
 

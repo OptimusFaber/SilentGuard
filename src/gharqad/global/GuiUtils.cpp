@@ -172,7 +172,7 @@ std::map<Icon::TrayIconStatus, IndicatorRule> indicatorRuleMap = {
     {Icon::TrayIconStatus::SYSTEM_PROXY, {0.4, 0.04, 0.4, kTrayOkGreen}},
     {Icon::TrayIconStatus::SYSTEM_PROXY_DNS, {0.4, 0.04, 0.4, kTrayOkGreen}},
     {Icon::TrayIconStatus::RUNNING, {0.4, 0.04, 0.4, kTrayOkGreen}},
-    {Icon::TrayIconStatus::ERROR, {0.4, 0.04, 0.4, kTrayErrorRed}},
+    {Icon::TrayIconStatus::CORE_ERROR, {0.4, 0.04, 0.4, kTrayErrorRed}},
 };
 
 namespace Configs {

@@ -56,8 +56,14 @@ cd "$SRC_ROOT"
 cmake -S $SRC_ROOT -B "$BUILD" -GNinja -DNKR_DEFAULT_VERSION="${INPUT_VERSION:-5.0.0}" -DSKIP_UPDATER="${SKIP_UPDATE_BUTTON:-OFF}" -DBUILD_GO_PARTS=ON -DBUILD_GO_PARTS="${BUILD_GO_PARTS}" "-DGO_MOD_TIDY=ON"
 cmake --build "$BUILD" -v -j $(nproc)
 (
-. script/deploy_linux64.sh; 
+. script/deploy_linux64.sh
 )
 )
+
+if [[ -z "$(find "$DEPLOYMENT" -type f -print -quit 2>/dev/null)" ]]; then
+  echo "::error::No files under ${DEPLOYMENT} after build+deploy (container uname=$(uname -m); check .ENV UNAME / deploy_linux64)"
+  find "$DEPLOYMENT" -print 2>/dev/null || true
+  exit 1
+fi
 
 eval "$LAST_ACTION"

@@ -2794,7 +2794,7 @@ void MainWindow::refresh_status(const QString &traffic_update) {
   auto icon_status_new = Icon::NONE;
 
   if (tray_core_error) {
-    icon_status_new = Icon::ERROR;
+    icon_status_new = Icon::CORE_ERROR;
   } else if (running != nullptr) {
     if (Configs::dataStore->spmode_vpn) {
       icon_status_new = Icon::VPN;
