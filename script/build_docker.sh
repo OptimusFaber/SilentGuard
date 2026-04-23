@@ -2,6 +2,7 @@
 . script/env_deploy.sh
 set -e
 export SILENTGUARD_ENV_DEPLOYED=yes
+mkdir -p "$DEPLOYMENT"
 
 if [[ -z `command -v $GOCMD` ]]
 then
@@ -60,10 +61,10 @@ cmake --build "$BUILD" -v -j $(nproc)
 )
 )
 
+eval "$LAST_ACTION"
+
 if [[ -z "$(find "$DEPLOYMENT" -type f -print -quit 2>/dev/null)" ]]; then
-  echo "::error::No files under ${DEPLOYMENT} after build+deploy (container uname=$(uname -m); check .ENV UNAME / deploy_linux64)"
+  echo "::error::No files under ${DEPLOYMENT} after build+deploy and LAST_ACTION (container uname=$(uname -m))"
   find "$DEPLOYMENT" -print 2>/dev/null || true
   exit 1
 fi
-
-eval "$LAST_ACTION"
