@@ -198,7 +198,7 @@ EOF
 chmod 755 silentguard_core AppRun updater
 )
 rm ./AppDir/Tun.png ||:
-ln -s public/logo.png ./AppDir/Tun.png
+ln -s public/logo.svg ./AppDir/Tun.png
 cat << EOF > ./AppDir/silentguard.desktop
 [Desktop Entry]
 Version=1.0

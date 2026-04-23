@@ -6,7 +6,7 @@
     <title>SilentGuard (Install)</title>
     <authors>SilentGuard contributors</authors>
 	<licenseUrl>https://www.gnu.org/licenses/gpl-3.0.txt</licenseUrl>
-	<iconUrl>https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/SilentGuard/refs/heads/main/res/public/icon.png</iconUrl>
+	<iconUrl>https://raw.githubusercontent.com/YOUR_GITHUB_USERNAME/SilentGuard/refs/heads/main/res/public/icon.svg</iconUrl>
     <projectUrl>https://github.com/YOUR_GITHUB_USERNAME/SilentGuard</projectUrl>
     <projectSourceUrl>https://github.com/YOUR_GITHUB_USERNAME/SilentGuard</projectSourceUrl>
     <packageSourceUrl>https://github.com/YOUR_GITHUB_USERNAME/SilentGuard/tree/main/script/silentguard_chocolatey</packageSourceUrl>
