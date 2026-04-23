@@ -1,13 +1,21 @@
 services:
  myapp:
-  platform: linux/${GUEST_ARCH:-386}
+  # GUEST_ARCH must match the target (amd64 / 386 / arm64 / arm). CI sets this per matrix row.
+  # Default amd64 for local dev; never default to 386 (that broke docker-cache / non-x86 jobs).
+  platform: linux/${GUEST_ARCH:-amd64}
   privileged: true
   devices:
     - "/dev/fuse:/dev/fuse"
   build:
     context: script
     dockerfile: Dockerfile
+  environment:
+    # Belt-and-suspenders with bind-mounted .ENV (host step writes it before compose).
+    - INPUT_VERSION=${INPUT_VERSION:-}
+    - UNAME=${GUEST_ARCH:-}
+    - SKIP_UPDATE_BUTTON=${SKIP_UPDATE_BUTTON:-}
   volumes:
-    - .:/app:Z   # bind current directory to /app in container
+    - .:/app   # bind current directory to /app in container (avoid :Z on generic CI runners)
   working_dir: /app
-  tty: true    # optional, keeps container running for interactive shell
+  # Do not use tty: true in CI — runners often have no TTY; that can break
+  # `docker compose up` waiting / exit handling for one-shot builds.

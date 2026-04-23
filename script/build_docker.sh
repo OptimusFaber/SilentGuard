@@ -65,8 +65,9 @@ eval "$LAST_ACTION"
 
 # Only count release bundles — do not use `find $DEPLOYMENT -type f` when DEPLOYMENT could equal
 # SRC_ROOT (would match README etc. and wrongly pass while ./deployment stays empty).
-if [[ -z "$(find "$DEPLOYMENT" -maxdepth 1 -type f \( -name '*.tar.gz' -o -name '*.AppImage' \) -print -quit 2>/dev/null)" ]]; then
+if [[ -z "$(find "$DEPLOYMENT" -maxdepth 1 -type f \( -name '*.tar.gz' -o -name '*.AppImage' \) -print -quit 2>/dev/null)" ]] &&
+   [[ -z "$(find "$DEPLOYMENT" -type f \( -name '*.tar.gz' -o -name '*.AppImage' \) -print -quit 2>/dev/null)" ]]; then
   echo "::error::No .tar.gz / .AppImage under ${DEPLOYMENT} after build+deploy and LAST_ACTION (container uname=$(uname -m))"
-  find "$DEPLOYMENT" -maxdepth 2 -print 2>/dev/null || true
+  find "$DEPLOYMENT" -maxdepth 4 -print 2>/dev/null || true
   exit 1
 fi

@@ -510,6 +510,8 @@ jobs:
     env:
       ACTIONS_ALLOW_UNSECURE_COMMANDS: true
       INPUT_VERSION: ${{ github.event.inputs.tag }}
+      # Used by docker-compose `platform:` for every step that runs Docker (including cache actions).
+      GUEST_ARCH: ${{ matrix.target }}
     steps:
       - name: Checking out sources
         if: matrix.allow == 'true' && github.event.inputs.source_only != 'true'
@@ -567,6 +569,12 @@ jobs:
         with:
           key: docker-${{ matrix.platform }}-${{ matrix.target }}-${{ hashFiles('script/Dockerfile') }}
 
+      # linux/386 images on amd64 GitHub runners need binfmt/QEMU; without it,
+      # image build or CMD can fail oddly or leave no bundles in ./deployment.
+      - name: Set up QEMU (linux/386 on amd64)
+        if: matrix.allow == 'true' && github.event.inputs.source_only != 'true' && matrix.target == '386'
+        uses: docker/setup-qemu-action@v3
+
       - name: Download linuxdeploy
         uses: ethanjli/cached-download-action@main
         with:
@@ -588,14 +596,23 @@ jobs:
       - name: Linux - Generate MakeFile and Build
         if: matrix.allow == 'true' && github.event.inputs.source_only != 'true'
         shell: bash
-        env:
-          GUEST_ARCH: ${{ matrix.target }}
         run: |
           if [[ ${{ github.event.inputs.skip_updater }} == 'true' ]]; then export SKIP_UPDATE_BUTTON=ON; else export SKIP_UPDATE_BUTTON=OFF; fi
           echo "UNAME=${GUEST_ARCH}" >> .ENV
           echo "INPUT_VERSION=${INPUT_VERSION}" >> .ENV
           echo "SKIP_UPDATE_BUTTON=${SKIP_UPDATE_BUTTON}" >> .ENV
-          docker compose up --force-recreate --build
+          docker compose up --force-recreate --build --abort-on-container-exit
+          # Fail fast in the build step if the container did not leave bundles on the bind mount.
+          mapfile -t _built < <(find ./deployment -maxdepth 1 -type f \( -name '*.tar.gz' -o -name '*.AppImage' \) 2>/dev/null | sort -u)
+          if [[ ${#_built[@]} -eq 0 ]]; then
+            mapfile -t _built < <(find ./deployment -type f \( -name '*.tar.gz' -o -name '*.AppImage' \) 2>/dev/null | sort -u)
+          fi
+          if [[ ${#_built[@]} -eq 0 ]]; then
+            echo "::error::Docker build finished but no .tar.gz / .AppImage in ./deployment (${{ matrix.target }}). Container logs:"
+            docker compose logs --no-color --tail=400 2>/dev/null || true
+            find ./deployment -maxdepth 5 -print 2>/dev/null || true
+            exit 1
+          fi
 
       - name: Linux - Publish
         if: matrix.allow == 'true' && github.event.inputs.source_only != 'true' && github.event.inputs.publish  == 'true'
@@ -606,6 +623,9 @@ jobs:
           # Match only bundles (same as build_docker.sh); also pick up stray outputs in repo root if
           # an old/bad DEPLOYMENT pointed at SRC_ROOT.
           mapfile -t _linux_assets < <(find ./deployment -maxdepth 1 -type f \( -name '*.tar.gz' -o -name '*.AppImage' \) 2>/dev/null | sort -u)
+          if [[ ${#_linux_assets[@]} -eq 0 ]]; then
+            mapfile -t _linux_assets < <(find ./deployment -type f \( -name '*.tar.gz' -o -name '*.AppImage' \) 2>/dev/null | sort -u)
+          fi
           if [[ ${#_linux_assets[@]} -eq 0 ]]; then
             mapfile -t _linux_assets < <(find . -maxdepth 1 -type f \( -name 'silentguard-*.tar.gz' -o -name 'silentguard-*.AppImage' -o -name '*-linux.AppImage' \) 2>/dev/null | sort -u)
           fi
