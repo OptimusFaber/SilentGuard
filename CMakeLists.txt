@@ -35,7 +35,7 @@ set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 set(NYXARIA "src/nekobox")
 set(GHARQAD "src/gharqad")
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Network LinguistTools Concurrent)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network LinguistTools Concurrent Svg)
 
 if (NKR_CROSS)
     set_property(TARGET Qt6::moc PROPERTY IMPORTED_LOCATION /usr/bin/moc)
@@ -323,7 +323,7 @@ endif()
 # Target Link
 
 target_link_libraries(silentguard PRIVATE
-        Qt6::Widgets Qt6::Network Qt6::Concurrent
+        Qt6::Widgets Qt6::Network Qt6::Concurrent Qt6::Svg
         Threads::Threads
         ${NKR_EXTERNAL_TARGETS}
         ${PLATFORM_LIBRARIES}
@@ -408,7 +408,7 @@ set(PROGRAMPREFIX "${CMAKE_INSTALL_LIBEXECDIR}/Iblis" CACHE STRING "Installation
 
 get_filename_component(START "${CMAKE_INSTALL_BINDIR}/silentguard" REALPATH BASE_DIR "${CMAKE_INSTALL_PREFIX}")
 get_filename_component(MAIN "${PROGRAMPREFIX}/silentguard" REALPATH BASE_DIR "${CMAKE_INSTALL_PREFIX}")
-get_filename_component(ICON "${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps/silentguard.png" REALPATH BASE_DIR "${CMAKE_INSTALL_PREFIX}")
+get_filename_component(ICON "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps/silentguard.svg" REALPATH BASE_DIR "${CMAKE_INSTALL_PREFIX}")
 
 # Configure the desktop file
 configure_file(
@@ -433,9 +433,9 @@ configure_file(
 
 
 install(
-    FILES "${CMAKE_SOURCE_DIR}/res/public/logo.png"
-    RENAME "silentguard.png"
-    DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/256x256/apps"
+    FILES "${CMAKE_SOURCE_DIR}/res/public/logo.svg"
+    RENAME "silentguard.svg"
+    DESTINATION "${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps"
 )
 
 install(
@@ -465,14 +465,16 @@ endif()
 
 install(FILES ${QM_FILES} DESTINATION "${PROGRAMPREFIX}/public")
 install(TARGETS silentguard DESTINATION "${PROGRAMPREFIX}")
-install(FILES 
-    "${CMAKE_SOURCE_DIR}/srslist.json"
-    "${CMAKE_SOURCE_DIR}/res/public/logo.png"
-    "${CMAKE_SOURCE_DIR}/res/public/logo-mark.png"
-    "${CMAKE_SOURCE_DIR}/res/public/logo-mark-light.png"
+install(FILES "${CMAKE_SOURCE_DIR}/srslist.json"
+    "${CMAKE_SOURCE_DIR}/res/public/logo.svg"
+    "${CMAKE_SOURCE_DIR}/res/public/icon.svg"
     "${CMAKE_SOURCE_DIR}/res/public/announcement_message.js"
     "${CMAKE_SOURCE_DIR}/res/public/check_routeprofiles.js"
     "${CMAKE_SOURCE_DIR}/res/languages.txt" DESTINATION "${PROGRAMPREFIX}/public")
+install(FILES "${CMAKE_SOURCE_DIR}/res/brand/svg/logo-blue..svg"
+    DESTINATION "${PROGRAMPREFIX}/public" RENAME "logo-mark.svg")
+install(FILES "${CMAKE_SOURCE_DIR}/res/brand/svg/logo-no-back-ground.svg"
+    DESTINATION "${PROGRAMPREFIX}/public" RENAME "logo-mark-light.svg")
 
 install_if_exists(${CMAKE_SOURCE_DIR}/res/public/emoji.ttf "${PROGRAMPREFIX}/public")
 install_if_exists(${CMAKE_SOURCE_DIR}/res/public/about.html "${PROGRAMPREFIX}/public")
