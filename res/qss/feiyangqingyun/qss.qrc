@@ -2,75 +2,75 @@
     <qresource prefix="silentguard">
         <file alias="qss/flatgray.css">qss/flatgray.qss</file>
         <file alias="qss/lightblue.css">qss/lightblue.qss</file>
-        <file>qss/flatgray/add_bottom.png</file>
-        <file>qss/flatgray/add_left.png</file>
-        <file>qss/flatgray/add_right.png</file>
-        <file>qss/flatgray/add_top.png</file>
-        <file>qss/flatgray/arrow_bottom.png</file>
-        <file>qss/flatgray/arrow_left.png</file>
-        <file>qss/flatgray/arrow_right.png</file>
-        <file>qss/flatgray/arrow_top.png</file>
-        <file>qss/flatgray/branch_close.png</file>
-        <file>qss/flatgray/branch_open.png</file>
-        <file>qss/flatgray/calendar_nextmonth.png</file>
-        <file>qss/flatgray/calendar_prevmonth.png</file>
-        <file>qss/flatgray/checkbox_checked.png</file>
-        <file>qss/flatgray/checkbox_checked_disable.png</file>
-        <file>qss/flatgray/checkbox_parcial.png</file>
-        <file>qss/flatgray/checkbox_parcial_disable.png</file>
-        <file>qss/flatgray/checkbox_unchecked.png</file>
-        <file>qss/flatgray/checkbox_unchecked_disable.png</file>
-        <file>qss/flatgray/menu_checked.png</file>
-        <file>qss/flatgray/radiobutton_checked.png</file>
-        <file>qss/flatgray/radiobutton_checked_disable.png</file>
-        <file>qss/flatgray/radiobutton_unchecked.png</file>
-        <file>qss/flatgray/radiobutton_unchecked_disable.png</file>
-        <file>qss/lightblue/add_bottom.png</file>
-        <file>qss/lightblue/add_left.png</file>
-        <file>qss/lightblue/add_right.png</file>
-        <file>qss/lightblue/add_top.png</file>
-        <file>qss/lightblue/arrow_bottom.png</file>
-        <file>qss/lightblue/arrow_left.png</file>
-        <file>qss/lightblue/arrow_right.png</file>
-        <file>qss/lightblue/arrow_top.png</file>
-        <file>qss/lightblue/branch_close.png</file>
-        <file>qss/lightblue/branch_open.png</file>
-        <file>qss/lightblue/calendar_nextmonth.png</file>
-        <file>qss/lightblue/calendar_prevmonth.png</file>
-        <file>qss/lightblue/checkbox_checked.png</file>
-        <file>qss/lightblue/checkbox_checked_disable.png</file>
-        <file>qss/lightblue/checkbox_parcial.png</file>
-        <file>qss/lightblue/checkbox_parcial_disable.png</file>
-        <file>qss/lightblue/checkbox_unchecked.png</file>
-        <file>qss/lightblue/checkbox_unchecked_disable.png</file>
-        <file>qss/lightblue/menu_checked.png</file>
-        <file>qss/lightblue/radiobutton_checked.png</file>
-        <file>qss/lightblue/radiobutton_checked_disable.png</file>
-        <file>qss/lightblue/radiobutton_unchecked.png</file>
-        <file>qss/lightblue/radiobutton_unchecked_disable.png</file>
         <file alias="qss/blacksoft.css">qss/blacksoft.qss</file>
-        <file>qss/blacksoft/add_bottom.png</file>
-        <file>qss/blacksoft/add_left.png</file>
-        <file>qss/blacksoft/add_right.png</file>
-        <file>qss/blacksoft/add_top.png</file>
-        <file>qss/blacksoft/arrow_bottom.png</file>
-        <file>qss/blacksoft/arrow_left.png</file>
-        <file>qss/blacksoft/arrow_right.png</file>
-        <file>qss/blacksoft/arrow_top.png</file>
-        <file>qss/blacksoft/branch_close.png</file>
-        <file>qss/blacksoft/branch_open.png</file>
-        <file>qss/blacksoft/calendar_nextmonth.png</file>
-        <file>qss/blacksoft/calendar_prevmonth.png</file>
-        <file>qss/blacksoft/checkbox_checked.png</file>
-        <file>qss/blacksoft/checkbox_checked_disable.png</file>
-        <file>qss/blacksoft/checkbox_parcial.png</file>
-        <file>qss/blacksoft/checkbox_parcial_disable.png</file>
-        <file>qss/blacksoft/checkbox_unchecked.png</file>
-        <file>qss/blacksoft/checkbox_unchecked_disable.png</file>
-        <file>qss/blacksoft/menu_checked.png</file>
-        <file>qss/blacksoft/radiobutton_checked.png</file>
-        <file>qss/blacksoft/radiobutton_checked_disable.png</file>
-        <file>qss/blacksoft/radiobutton_unchecked.png</file>
-        <file>qss/blacksoft/radiobutton_unchecked_disable.png</file>
+        <file alias="qss/flatgray/checkbox_checked.svg">../../theme-svg/checkbox_checked.svg</file>
+        <file alias="qss/flatgray/checkbox_checked_disable.svg">../../theme-svg/checkbox_checked_disable.svg</file>
+        <file alias="qss/flatgray/checkbox_unchecked.svg">../../theme-svg/checkbox_unchecked.svg</file>
+        <file alias="qss/flatgray/checkbox_unchecked_disable.svg">../../theme-svg/checkbox_unchecked_disabled.svg</file>
+        <file alias="qss/flatgray/checkbox_parcial.svg">../../theme-svg/checkbox_parcial.svg</file>
+        <file alias="qss/flatgray/checkbox_parcial_disable.svg">../../theme-svg/checkbox_parcial_disable.svg</file>
+        <file alias="qss/flatgray/radiobutton_checked.svg">../../theme-svg/radio_checked.svg</file>
+        <file alias="qss/flatgray/radiobutton_checked_disable.svg">../../theme-svg/radio_checked_disabled.svg</file>
+        <file alias="qss/flatgray/radiobutton_unchecked.svg">../../theme-svg/radio_unchecked.svg</file>
+        <file alias="qss/flatgray/radiobutton_unchecked_disable.svg">../../theme-svg/radio_unchecked_disabled.svg</file>
+        <file alias="qss/flatgray/menu_checked.svg">../../theme-svg/menu_checked.svg</file>
+        <file alias="qss/flatgray/branch_open.svg">../../theme-svg/branch_open.svg</file>
+        <file alias="qss/flatgray/branch_close.svg">../../theme-svg/branch_closed.svg</file>
+        <file alias="qss/flatgray/add_top.svg">../../theme-svg/up_arrow.svg</file>
+        <file alias="qss/flatgray/add_bottom.svg">../../theme-svg/down_arrow.svg</file>
+        <file alias="qss/flatgray/add_left.svg">../../theme-svg/left_arrow.svg</file>
+        <file alias="qss/flatgray/add_right.svg">../../theme-svg/right_arrow.svg</file>
+        <file alias="qss/flatgray/arrow_top.svg">../../theme-svg/up_arrow.svg</file>
+        <file alias="qss/flatgray/arrow_bottom.svg">../../theme-svg/down_arrow.svg</file>
+        <file alias="qss/flatgray/arrow_left.svg">../../theme-svg/left_arrow.svg</file>
+        <file alias="qss/flatgray/arrow_right.svg">../../theme-svg/right_arrow.svg</file>
+        <file alias="qss/flatgray/calendar_prevmonth.svg">../../theme-svg/left_arrow.svg</file>
+        <file alias="qss/flatgray/calendar_nextmonth.svg">../../theme-svg/right_arrow.svg</file>
+        <file alias="qss/lightblue/checkbox_checked.svg">../../theme-svg/checkbox_checked.svg</file>
+        <file alias="qss/lightblue/checkbox_checked_disable.svg">../../theme-svg/checkbox_checked_disable.svg</file>
+        <file alias="qss/lightblue/checkbox_unchecked.svg">../../theme-svg/checkbox_unchecked.svg</file>
+        <file alias="qss/lightblue/checkbox_unchecked_disable.svg">../../theme-svg/checkbox_unchecked_disabled.svg</file>
+        <file alias="qss/lightblue/checkbox_parcial.svg">../../theme-svg/checkbox_parcial.svg</file>
+        <file alias="qss/lightblue/checkbox_parcial_disable.svg">../../theme-svg/checkbox_parcial_disable.svg</file>
+        <file alias="qss/lightblue/radiobutton_checked.svg">../../theme-svg/radio_checked.svg</file>
+        <file alias="qss/lightblue/radiobutton_checked_disable.svg">../../theme-svg/radio_checked_disabled.svg</file>
+        <file alias="qss/lightblue/radiobutton_unchecked.svg">../../theme-svg/radio_unchecked.svg</file>
+        <file alias="qss/lightblue/radiobutton_unchecked_disable.svg">../../theme-svg/radio_unchecked_disabled.svg</file>
+        <file alias="qss/lightblue/menu_checked.svg">../../theme-svg/menu_checked.svg</file>
+        <file alias="qss/lightblue/branch_open.svg">../../theme-svg/branch_open.svg</file>
+        <file alias="qss/lightblue/branch_close.svg">../../theme-svg/branch_closed.svg</file>
+        <file alias="qss/lightblue/add_top.svg">../../theme-svg/up_arrow.svg</file>
+        <file alias="qss/lightblue/add_bottom.svg">../../theme-svg/down_arrow.svg</file>
+        <file alias="qss/lightblue/add_left.svg">../../theme-svg/left_arrow.svg</file>
+        <file alias="qss/lightblue/add_right.svg">../../theme-svg/right_arrow.svg</file>
+        <file alias="qss/lightblue/arrow_top.svg">../../theme-svg/up_arrow.svg</file>
+        <file alias="qss/lightblue/arrow_bottom.svg">../../theme-svg/down_arrow.svg</file>
+        <file alias="qss/lightblue/arrow_left.svg">../../theme-svg/left_arrow.svg</file>
+        <file alias="qss/lightblue/arrow_right.svg">../../theme-svg/right_arrow.svg</file>
+        <file alias="qss/lightblue/calendar_prevmonth.svg">../../theme-svg/left_arrow.svg</file>
+        <file alias="qss/lightblue/calendar_nextmonth.svg">../../theme-svg/right_arrow.svg</file>
+        <file alias="qss/blacksoft/checkbox_checked.svg">../../theme-svg/checkbox_checked.svg</file>
+        <file alias="qss/blacksoft/checkbox_checked_disable.svg">../../theme-svg/checkbox_checked_disable.svg</file>
+        <file alias="qss/blacksoft/checkbox_unchecked.svg">../../theme-svg/checkbox_unchecked.svg</file>
+        <file alias="qss/blacksoft/checkbox_unchecked_disable.svg">../../theme-svg/checkbox_unchecked_disabled.svg</file>
+        <file alias="qss/blacksoft/checkbox_parcial.svg">../../theme-svg/checkbox_parcial.svg</file>
+        <file alias="qss/blacksoft/checkbox_parcial_disable.svg">../../theme-svg/checkbox_parcial_disable.svg</file>
+        <file alias="qss/blacksoft/radiobutton_checked.svg">../../theme-svg/radio_checked.svg</file>
+        <file alias="qss/blacksoft/radiobutton_checked_disable.svg">../../theme-svg/radio_checked_disabled.svg</file>
+        <file alias="qss/blacksoft/radiobutton_unchecked.svg">../../theme-svg/radio_unchecked.svg</file>
+        <file alias="qss/blacksoft/radiobutton_unchecked_disable.svg">../../theme-svg/radio_unchecked_disabled.svg</file>
+        <file alias="qss/blacksoft/menu_checked.svg">../../theme-svg/menu_checked.svg</file>
+        <file alias="qss/blacksoft/branch_open.svg">../../theme-svg/branch_open.svg</file>
+        <file alias="qss/blacksoft/branch_close.svg">../../theme-svg/branch_closed.svg</file>
+        <file alias="qss/blacksoft/add_top.svg">../../theme-svg/up_arrow.svg</file>
+        <file alias="qss/blacksoft/add_bottom.svg">../../theme-svg/down_arrow.svg</file>
+        <file alias="qss/blacksoft/add_left.svg">../../theme-svg/left_arrow.svg</file>
+        <file alias="qss/blacksoft/add_right.svg">../../theme-svg/right_arrow.svg</file>
+        <file alias="qss/blacksoft/arrow_top.svg">../../theme-svg/up_arrow.svg</file>
+        <file alias="qss/blacksoft/arrow_bottom.svg">../../theme-svg/down_arrow.svg</file>
+        <file alias="qss/blacksoft/arrow_left.svg">../../theme-svg/left_arrow.svg</file>
+        <file alias="qss/blacksoft/arrow_right.svg">../../theme-svg/right_arrow.svg</file>
+        <file alias="qss/blacksoft/calendar_prevmonth.svg">../../theme-svg/left_arrow.svg</file>
+        <file alias="qss/blacksoft/calendar_nextmonth.svg">../../theme-svg/right_arrow.svg</file>
     </qresource>
 </RCC>

@@ -72,7 +72,7 @@ QComboBox::drop-down {
 }
 
 QComboBox::down-arrow {
-    image: url(down_arrow.png); /* Placeholder for an arrow icon */
+    image: url(:/qss_icons/rc/down_arrow.svg);
 }
 
 /* ScrollBar */
