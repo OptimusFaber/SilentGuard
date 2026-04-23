@@ -16,6 +16,8 @@ namespace Icon {
         VPN,
         DNS,
         SYSTEM_PROXY_DNS,
+        /** Core / profile fault while user expects an active session */
+        ERROR,
     };
 
     QPixmap GetTrayIcon(TrayIconStatus status);

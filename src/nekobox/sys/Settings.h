@@ -132,7 +132,7 @@ public:
   bool auto_hide = false;
   bool save_geometry = true;
   bool save_position = true;
-  bool text_under_buttons = true;
+  bool text_under_buttons = false;
   bool manually_column_width = false;
   bool ask_delete = true;
   QStringList column_width;

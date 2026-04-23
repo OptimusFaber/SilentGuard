@@ -186,6 +186,9 @@ public:
 
     void profile_stop(bool crash = false, bool block = false, bool manual = false);
 
+    /** Red tray badge until next successful start / clean stop */
+    void setTrayCoreError(bool v);
+
     void set_spmode_system_proxy(bool enable, bool save = true);
 
     void toggle_system_proxy();
@@ -323,6 +326,7 @@ private:
     QTextDocument *qvLogDocument = new QTextDocument(this);
     //
     QString title_error;
+    bool tray_core_error = false;
     int icon_status = -1;
     std::shared_ptr<Configs::ProxyEntity> running;
     QString traffic_update_cache;
