@@ -209,7 +209,12 @@ jobs:
           then
             gh release create "${INPUT_VERSION}" --title "${INPUT_VERSION}" --notes "${MESSAGE}"
           fi
-          gh release upload "${INPUT_VERSION}" deployment/* --clobber
+          mapfile -t _rel_assets < <(find deployment -maxdepth 1 -type f 2>/dev/null | sort)
+          if [[ ${#_rel_assets[@]} -eq 0 ]]; then
+            echo "::error::deployment/ has no files — deploy_vendor.sh should have produced an archive"
+            exit 1
+          fi
+          gh release upload "${INPUT_VERSION}" "${_rel_assets[@]}" --clobber
       - name: Tar files
         if: matrix.cross_os == 'public' || ( github.event.inputs.source_only  != 'true' && matrix.allow == 'true' )
         run: tar czvf artifacts.tgz ./deployment
@@ -598,7 +603,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload "$INPUT_VERSION" ./deployment/* --clobber
+          mapfile -t _linux_assets < <(find ./deployment -maxdepth 1 -type f 2>/dev/null | sort)
+          if [[ ${#_linux_assets[@]} -eq 0 ]]; then
+            echo "::error::./deployment is empty after docker build (${{ matrix.target }}) — fix image output or deploy path before upload"
+            exit 1
+          fi
+          gh release upload "$INPUT_VERSION" "${_linux_assets[@]}" --clobber
 
       - name: Tar files
         if: matrix.allow == 'true' && github.event.inputs.source_only != 'true'

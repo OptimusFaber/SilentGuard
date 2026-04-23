@@ -11,13 +11,13 @@
         <file alias="icon/b-network-routing.svg">brand/svg/network-routing.svg</file>
         <file alias="icon/b-system-security.svg">brand/svg/system-security.svg</file>
         <file alias="icon/b-update.svg">brand/svg/update.svg</file>
-        <file>icon/material/lock-open-outline.svg</file>
-        <file>icon/material/lock-outline.svg</file>
-        <file>icon/material/cancel.svg</file>
-        <file>icon/material/history.svg</file>
-        <file>icon/material/swap-vertical.svg</file>
-        <file>icon/material/delete.svg</file>
-        <file>icon/material/swap-horizontal.svg</file>
+        <file alias="icon/material/lock-open-outline.svg">brand/svg/lock-open-outline.svg</file>
+        <file alias="icon/material/lock-outline.svg">brand/svg/lock-outline.svg</file>
+        <file alias="icon/material/cancel.svg">brand/svg/cancel.svg</file>
+        <file alias="icon/material/history.svg">brand/svg/history.svg</file>
+        <file alias="icon/material/swap-vertical.svg">brand/svg/swap-verical.svg</file>
+        <file alias="icon/material/delete.svg">brand/svg/delete.svg</file>
+        <file alias="icon/material/swap-horizontal.svg">brand/svg/swap-horizontal.svg</file>
     </qresource>
     <qresource prefix="/systray">
         <file>dashboard-notice.html</file>
