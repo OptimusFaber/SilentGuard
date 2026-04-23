@@ -42,6 +42,12 @@ void MainWindow::setup_rpc() {
     defaultClient = new Client(
         [=](const QString &errStr) {
             MW_show_log("[Error] Core: " + errStr);
+            runOnUiThread([=] {
+                if (Configs::dataStore->started_id >= 0) {
+                    if (auto *mw = GetMainWindow())
+                        mw->setTrayCoreError(true);
+                }
+            });
         }
     );
 
@@ -578,18 +584,21 @@ void MainWindow::profile_start(int _id, bool do_not_test) {
     auto group = Configs::profileManager->GetGroup(ent->gid);
     if (group == nullptr || group->archive) return;
 
+    setTrayCoreError(false);
+
     auto profile_start_stage2 = [=, this] {
         //
         bool rpcOK;
         auto [error, result] = defaultClient->StartEntity(&rpcOK, ent);
         if (!rpcOK) {
+            runOnUiThread([=, this] { setTrayCoreError(true); });
             return false;
         }
 
         if (!error.isEmpty()) {
             if (error.contains("configure tun interface")) {
                 runOnUiThread([=, this] {
-
+                    setTrayCoreError(true);
                     QMessageBox msg(
                         QMessageBox::Information,
                         tr("Tun device misbehaving"),
@@ -610,8 +619,9 @@ void MainWindow::profile_start(int _id, bool do_not_test) {
                 });
                 return false;
             }
-            runOnUiThread([error,this] { 
-               QMessageBox::warning(this, "LoadConfig return error", error); 
+            runOnUiThread([error, this] {
+                QMessageBox::warning(this, "LoadConfig return error", error);
+                setTrayCoreError(true);
             });
             return false;
         }
@@ -624,6 +634,7 @@ void MainWindow::profile_start(int _id, bool do_not_test) {
         running = ent;
 
         runOnUiThread([=, this] {
+            setTrayCoreError(false);
             refresh_status();
             refresh_proxy_list(ent->id);
         });
@@ -779,6 +790,7 @@ void MainWindow::profile_stop(bool crash, bool block, bool manual) {
         if (block) blocker.unlock();
 
         runOnUiThread([=, this, &blocker] {
+            setTrayCoreError(false);
             refresh_status();
             refresh_proxy_list_impl_refresh_data(id, true);
 

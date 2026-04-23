@@ -171,7 +171,7 @@ DialogBasicSettings::DialogBasicSettings(MainWindow *parent)
         adjustSize();                       \
     }                   
     
-    LINK_RESOURCE_MANAGER("logo.png", icon, UPDATE_ICON);
+    LINK_RESOURCE_MANAGER("logo.svg", icon, UPDATE_ICON);
     LINK_RESOURCE_MANAGER("emoji.ttf", emoji, UPDATE_FONT);
 
     D_LOAD_STRING(inbound_address)

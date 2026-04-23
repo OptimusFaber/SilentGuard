@@ -4,6 +4,7 @@
 
 #include <nekobox/sys/Process.hpp>
 #include <nekobox/dataStore/Configs.hpp>
+#include <nekobox/global/GuiUtils.hpp>
 
 #include <QTimer>
 #include <QDir>
@@ -75,6 +76,10 @@ namespace Configs_sys {
                 } else if (log.contains("failed to serve")) {
                     // The core failed to start
                     process.kill();
+                    runOnUiThread([] {
+                        if (auto *mw = GetMainWindow())
+                            mw->setTrayCoreError(true);
+                    });
                     goto show_log;
                 }
             } else {
@@ -86,6 +91,10 @@ namespace Configs_sys {
             if (log.contains("Extra process exited unexpectedly"))
             {
                 MW_show_log("Extra Core exited, stopping profile...");
+                runOnUiThread([] {
+                    if (auto *mw = GetMainWindow())
+                        mw->setTrayCoreError(true);
+                });
                 MW_dialog_message("ExternalProcess", "Crashed");
                 goto show_log;
             }
@@ -101,6 +110,10 @@ namespace Configs_sys {
             if (error == QProcess::FailedToStart) {
                 failed_to_start = true;
                 MW_show_log("start core error occurred: " + process.errorString() + "\n");
+                runOnUiThread([] {
+                    if (auto *mw = GetMainWindow())
+                        mw->setTrayCoreError(true);
+                });
             }
         });
         connect(&process, &QProcess::stateChanged, this, [&](QProcess::ProcessState state) {
@@ -120,6 +133,10 @@ namespace Configs_sys {
                 if (restarting) return;
 
                 MW_show_log("[Fatal] " + QObject::tr("Core exited, cleaning up..."));
+                runOnUiThread([] {
+                    if (auto *mw = GetMainWindow())
+                        mw->setTrayCoreError(true);
+                });
                 GetMainWindow()->profile_stop(true, true);
 
                 // Retry rate limit
@@ -127,6 +144,10 @@ namespace Configs_sys {
                     if (coreRestartTimer.restart() < 10 * 1000) {
                         coreRestartTimer = QElapsedTimer();
                         MW_show_log("[ERROR] " + QObject::tr("Core exits too frequently, stop automatic restart this profile."));
+                        runOnUiThread([] {
+                            if (auto *mw = GetMainWindow())
+                                mw->setTrayCoreError(true);
+                        });
                         return;
                     }
                 } else {

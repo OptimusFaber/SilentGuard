@@ -27,12 +27,11 @@ QPixmap Icon::GetTrayIcon(TrayIconStatus status) {
   QPixmap pixmap(256, 256);
   pixmap.fill(Qt::transparent);
 
-  QIcon pixmap_read(SYSTRAY_ICON("logo.png"));
+  QIcon pixmap_read(SYSTRAY_ICON("logo.svg"));
   bool pixmap_read_isnull = pixmap_read.isNull();
   auto p = QPainter(&pixmap);
-  auto rule = indicatorRuleMap[status];
   if (pixmap_read_isnull) {
-    pixmap_read = QIcon(SYSTRAY_ICON("icon.png"));
+    pixmap_read = QIcon(SYSTRAY_ICON("icon.svg"));
     pixmap_read_isnull = pixmap_read.isNull();
   }
   if (pixmap_read_isnull) {
@@ -41,7 +40,9 @@ QPixmap Icon::GetTrayIcon(TrayIconStatus status) {
   }
   if (!pixmap_read_isnull){
     p.drawPixmap(0, 0, pixmap_read.pixmap(QSize(256, 256)));
-    if (indicatorRuleMap.contains(status)) {
+    const auto itRule = indicatorRuleMap.find(status);
+    if (itRule != indicatorRuleMap.end()) {
+      const auto &rule = itRule->second;
       auto side = pixmap.width();
       auto radius = side * rule.radius;
       auto d = side * rule.diameter;

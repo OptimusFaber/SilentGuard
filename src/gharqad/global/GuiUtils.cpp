@@ -163,12 +163,16 @@ QColor DisplayLatencyColor(Configs::ProxyEntity *e) {
   return Qt::black;
 }
 
+static const QColor kTrayOkGreen(0x18, 0xE2, 0x5C);
+static const QColor kTrayErrorRed(0xE2, 0x18, 0x18);
+
 std::map<Icon::TrayIconStatus, IndicatorRule> indicatorRuleMap = {
-    {Icon::TrayIconStatus::VPN, {0.4, 0.04, 0.4, QColor(165, 42, 42)}},
-    {Icon::TrayIconStatus::DNS, {0.4, 0.04, 0.4, Qt::darkMagenta}},
-    {Icon::TrayIconStatus::SYSTEM_PROXY, {0.4, 0.04, 0.4, Qt::blue}},
-    {Icon::TrayIconStatus::SYSTEM_PROXY_DNS, {0.4, 0.04, 0.4, Qt::darkMagenta}},
-    {Icon::TrayIconStatus::RUNNING, {0.4, 0.04, 0.4, Qt::darkGreen}}
+    {Icon::TrayIconStatus::VPN, {0.4, 0.04, 0.4, kTrayOkGreen}},
+    {Icon::TrayIconStatus::DNS, {0.4, 0.04, 0.4, kTrayOkGreen}},
+    {Icon::TrayIconStatus::SYSTEM_PROXY, {0.4, 0.04, 0.4, kTrayOkGreen}},
+    {Icon::TrayIconStatus::SYSTEM_PROXY_DNS, {0.4, 0.04, 0.4, kTrayOkGreen}},
+    {Icon::TrayIconStatus::RUNNING, {0.4, 0.04, 0.4, kTrayOkGreen}},
+    {Icon::TrayIconStatus::ERROR, {0.4, 0.04, 0.4, kTrayErrorRed}},
 };
 
 namespace Configs {

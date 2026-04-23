@@ -75,6 +75,8 @@
 #include <QFileInfo>
 #include <QInputDialog>
 #include <QLabel>
+#include <QPainter>
+#include <QSvgRenderer>
 #include <QMessageBox>
 #include <QScreen>
 #include <QScrollBar>
@@ -136,13 +138,20 @@ void MainWindow::updateBrandMark() {
   } else {
     light = !isDarkMode();
   }
-  const char *res =
-      light ? ":/brand/logo-mark-light.png" : ":/brand/logo-mark.png";
-  QPixmap pm(QString::fromUtf8(res));
-  if (!pm.isNull()) {
-    ui->label_brand_mark->setPixmap(pm.scaled(
-        36, 36, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+  const QString path =
+      light ? QStringLiteral(":/brand/logo-mark-light.svg")
+            : QStringLiteral(":/brand/logo-mark.svg");
+  QSvgRenderer renderer(path);
+  if (!renderer.isValid()) {
+    return;
   }
+  const QSize sz(36, 36);
+  QImage img(sz, QImage::Format_ARGB32);
+  img.fill(Qt::transparent);
+  QPainter p(&img);
+  renderer.render(&p, QRectF(0, 0, sz.width(), sz.height()));
+  p.end();
+  ui->label_brand_mark->setPixmap(QPixmap::fromImage(img));
 }
 
 SelectDialog::SelectDialog(QWidget *parent,
@@ -156,6 +165,7 @@ void MainWindow::changeEvent(QEvent *event) {
   switch (type) {
   case QEvent::StyleChange:
   case QEvent::Style:
+  case QEvent::PaletteChange:
   case QEvent::FontChange: {
     QFont font = this->font();
     this->ui->label_inbound->setFont(font);
@@ -187,6 +197,10 @@ void MainWindow::changeEvent(QEvent *event) {
     ui->label_running->setStyleSheet(stylesheet);
     ui->toolbox_group->setStyleSheet(
         "QGroupBox { background: transparent; border: none; }");
+    if (type == QEvent::PaletteChange || type == QEvent::StyleChange ||
+        type == QEvent::Style) {
+      refresh_proxy_list(-1);
+    }
     break;
   }
   default:
@@ -664,6 +678,7 @@ MainWindow::MainWindow(QWidget *parent)
             }
             new SyntaxHighlighter(darkMode, qvLogDocument);
             updateBrandMark();
+            refresh_proxy_list(-1);
           });
 
   updateEmojiFont();
@@ -1074,8 +1089,21 @@ skip_updater_hide:
             }
             Configs::tableSettings.column_width[logicalIndex] = newSize;
           });
-  ui->proxyListTable->verticalHeader()->setDefaultSectionSize(24);
+  ui->proxyListTable->verticalHeader()->setDefaultSectionSize(26);
+  ui->proxyListTable->verticalHeader()->setMinimumWidth(28);
+  ui->proxyListTable->verticalHeader()->setSectionsClickable(true);
   ui->proxyListTable->setTabKeyNavigation(false);
+  connect(ui->proxyListTable->verticalHeader(), &QHeaderView::sectionClicked, this,
+          [this](int logicalIndex) {
+            CHECK_ACTION_ACCESS_W
+            auto *cell = ui->proxyListTable->item(logicalIndex, 0);
+            if (cell == nullptr)
+              return;
+            const int id = cell->data(114514).toInt();
+            if (id < 0)
+              return;
+            profile_start(id, !Configs::windowSettings->test_after_start);
+          });
 
   // search box
   setSearchState(false);
@@ -2765,7 +2793,9 @@ void MainWindow::refresh_status(const QString &traffic_update) {
 
   auto icon_status_new = Icon::NONE;
 
-  if (running != nullptr) {
+  if (tray_core_error) {
+    icon_status_new = Icon::ERROR;
+  } else if (running != nullptr) {
     if (Configs::dataStore->spmode_vpn) {
       icon_status_new = Icon::VPN;
     } else if (Configs::dataStore->system_dns_set &&
@@ -2782,17 +2812,20 @@ void MainWindow::refresh_status(const QString &traffic_update) {
 
   // refresh title & window icon
   setWindowTitle(make_title(false));
-  if (icon_status_new != icon_status)
-    QApplication::setWindowIcon(GetTrayIcon(Icon::RUNNING));
-
-  // refresh tray
   if (tray != nullptr) {
     tray->setToolTip(make_title(true));
     if (icon_status_new != icon_status)
       setAppIcon(icon_status_new, tray, this);
+  } else if (icon_status_new != icon_status) {
+    QApplication::setWindowIcon(Icon::GetTrayIcon(icon_status_new));
   }
 
   icon_status = icon_status_new;
+}
+
+void MainWindow::setTrayCoreError(bool v) {
+  tray_core_error = v;
+  refresh_status();
 }
 
 void setAppIcon(Icon::TrayIconStatus icon_status_new, QSystemTrayIcon *tray,
@@ -3020,9 +3053,13 @@ void MainWindow::refresh_table_item(
   auto f0 = std::make_unique<QTableWidgetItem>();
   f0->setData(114514, profile->id);
 
-  // Check state
+  // Profile selector (theme-aware radio icons from shared QSS pack)
   auto check = f0->clone();
-  check->setText(isRunning ? "✓" : QString::number(row + 1) + "  ");
+  check->setText({});
+  check->setToolTip(isRunning ? tr("Active profile — click to restart")
+                             : tr("Click to start this profile"));
+  check->setIcon(isRunning ? QIcon(QStringLiteral(":/qss_icons/rc/radio_checked.svg"))
+                           : QIcon(QStringLiteral(":/qss_icons/rc/radio_unchecked.svg")));
   ui->proxyListTable->setVerticalHeaderItem(row, check);
 
   // C0: Type
