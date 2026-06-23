@@ -143,7 +143,7 @@ namespace Configs {
 
         // Misc
         QString log_level = "info";
-        QString test_latency_url = "http://cp.cloudflare.com/";
+        QString test_latency_url = "https://www.gstatic.com/generate_204";
         int url_test_timeout_ms = 6000;
         bool disable_tray = false;
         int test_concurrent = 10;
@@ -175,7 +175,7 @@ namespace Configs {
         int auto_test_working_pool_size = 2;
         int auto_test_latency_threshold_ms = 1000;
         int auto_test_failure_retry_count = 2;
-        QString auto_test_target_url = "http://cp.cloudflare.com/";
+        QString auto_test_target_url = "https://www.gstatic.com/generate_204";
         bool auto_test_tun_failover = true;
 
         // Network
