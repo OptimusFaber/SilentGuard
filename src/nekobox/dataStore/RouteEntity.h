@@ -163,6 +163,12 @@ namespace Configs {
 
         static std::shared_ptr<RoutingChain> GetDefaultChain();
 
+        static std::shared_ptr<RoutingChain> FromShadowrocketConf(const QString &content,
+                                                                  QString *error = nullptr);
+
+        static std::shared_ptr<RoutingChain> LoadShadowrocketConfFile(const QString &path,
+                                                                       QString *error = nullptr);
+
         std::shared_ptr<QList<int>> get_used_outbounds();
 
         std::shared_ptr<QStringList> get_used_rule_sets();

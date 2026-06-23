@@ -612,6 +612,23 @@ void ProfileManager::LoadManager() {
   if (routes.empty()) {
     auto defaultRoute = RoutingChain::GetDefaultChain();
     profileManager->AddRouteChain(defaultRoute);
+    dataStore->routing->current_route_id = defaultRoute->id;
+    dataStore->routing->Save();
+  } else {
+    for (auto &[id, route] : routes) {
+      const bool legacyDefault = route->chain_name == QStringLiteral("Default") &&
+                                 route->Rules.size() <= 1;
+      if (!legacyDefault)
+        continue;
+      auto splitRoute = RoutingChain::GetDefaultChain();
+      splitRoute->id = route->id;
+      routes[id] = splitRoute;
+      splitRoute->Save();
+      dataStore->routing->current_route_id = id;
+      dataStore->routing->Save();
+      MW_show_log(QObject::tr("Upgraded routing profile to Default (Split)"));
+      break;
+    }
   }
 }
 

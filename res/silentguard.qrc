@@ -19,6 +19,9 @@
         <file alias="icon/material/delete.svg">brand/svg/delete.svg</file>
         <file alias="icon/material/swap-horizontal.svg">brand/svg/swap-horizontal.svg</file>
     </qresource>
+    <qresource prefix="/silentguard">
+        <file alias="routing/default_shadowrocket.conf">routing/default_shadowrocket.conf</file>
+    </qresource>
     <qresource prefix="/systray">
         <file>dashboard-notice.html</file>
     </qresource>

@@ -66,4 +66,6 @@ public slots:
     void on_edit_route_clicked();
 
     void on_delete_route_clicked();
+
+    void on_import_shadowrocket_clicked();
 };

@@ -13,7 +13,10 @@
 #include <nekobox/configs/proxy/Preset.hpp>
 
 #include <QFile>
+#include <QFileDialog>
+#include <QHBoxLayout>
 #include <QMessageBox>
+#include <QPushButton>
 #include <QShortcut>
 #include <QTimer>
 #include <QToolTip>
@@ -147,6 +150,15 @@ DialogManageRoutes::DialogManageRoutes(QWidget *parent, bool EditRouteProfiles) 
     connect(deleteShortcut, &QShortcut::activated, this, [=,this]{
         on_delete_route_clicked();
     });
+
+    if (auto *routeButtons = ui->new_route->parentWidget()) {
+        if (auto *layout = qobject_cast<QHBoxLayout *>(routeButtons->layout())) {
+            auto *importShadowrocket = new QPushButton(tr("Import Shadowrocket..."), routeButtons);
+            layout->insertWidget(layout->indexOf(ui->export_route) + 1, importShadowrocket);
+            connect(importShadowrocket, &QPushButton::clicked, this,
+                    &DialogManageRoutes::on_import_shadowrocket_clicked);
+        }
+    }
 
     // hijack
     ui->dnshijack_enable->setChecked(Configs::dataStore->enable_dns_server);
@@ -346,4 +358,31 @@ void DialogManageRoutes::on_delete_route_clicked() {
         currentRoute = chainList[0];
     }
     reloadProfileItems();
+}
+
+void DialogManageRoutes::on_import_shadowrocket_clicked() {
+    const QString path = QFileDialog::getOpenFileName(
+        this, tr("Import Shadowrocket config"), QString(),
+        tr("Shadowrocket config (*.conf *.txt);;All files (*)"));
+    if (path.isEmpty())
+        return;
+
+    QString err;
+    auto chain = Configs::RoutingChain::LoadShadowrocketConfFile(path, &err);
+    if (chain == nullptr) {
+        MessageBoxWarning(tr("Import failed"), err);
+        return;
+    }
+
+    chain->chain_name = QFileInfo(path).completeBaseName();
+    chain->skip_update = true;
+    Configs::profileManager->AddRouteChain(chain);
+    chainList << chain;
+    currentRoute = chain;
+    Configs::dataStore->routing->current_route_id = chain->id;
+    reloadProfileItems();
+    ui->route_profiles->setCurrentRow(chainList.size() - 1);
+    MessageBoxInfo(tr("Import complete"),
+                   tr("Imported %1 routing rules from Shadowrocket config.")
+                       .arg(chain->Rules.size() - 1));
 }

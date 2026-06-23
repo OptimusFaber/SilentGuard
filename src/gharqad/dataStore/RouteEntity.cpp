@@ -4,10 +4,13 @@
 
 #include <QJsonObject>
 #include <QJsonArray>
+#include <QFile>
+#include <QObject>
 #include <nekobox/configs/proxy/AbstractBean.hpp>
 #include <nekobox/dataStore/RouteEntity.h>
 #include <nekobox/dataStore/Database.hpp>
 #include <nekobox/configs/proxy/Preset.hpp>
+#include <nekobox/dataStore/Utils.hpp>
 #include <iostream>
 
 namespace Configs {
@@ -574,16 +577,168 @@ namespace Configs {
         return res;
     }
 
+    namespace {
+
+    int shadowrocketPolicyToOutbound(const QString &policy) {
+        const QString p = policy.trimmed();
+        if (p.compare(QStringLiteral("DIRECT"), Qt::CaseInsensitive) == 0)
+            return directID;
+        if (p.startsWith(QStringLiteral("REJECT"), Qt::CaseInsensitive))
+            return blockID;
+        return proxyID;
+    }
+
+    QString shadowrocketGeoRuleSet(const QString &code) {
+        return QStringLiteral("geoip-") + code.trimmed().toLower();
+    }
+
+    std::shared_ptr<RouteRule> makeShadowrocketRouteRule(int outbound, const QString &name) {
+        auto rule = std::make_shared<RouteRule>();
+        rule->name = name;
+        rule->action = outbound == blockID ? QStringLiteral("reject") : QStringLiteral("route");
+        rule->outboundID = outbound;
+        return rule;
+    }
+
+    } // namespace
+
+    std::shared_ptr<RoutingChain> RoutingChain::FromShadowrocketConf(const QString &content,
+                                                                     QString *error) {
+        auto chain = std::make_shared<RoutingChain>();
+        chain->chain_name = QObject::tr("Shadowrocket Import");
+        chain->defaultOutboundID = proxyID;
+
+        auto dnsRule = std::make_shared<RouteRule>();
+        dnsRule->name = QStringLiteral("Route DNS");
+        dnsRule->action = QStringLiteral("hijack-dns");
+        dnsRule->protocol = QStringLiteral("dns");
+        chain->Rules << dnsRule;
+
+        bool inRules = false;
+        int ruleCounter = 0;
+        for (const auto &rawLine : content.split('\n')) {
+            auto line = rawLine.trimmed();
+            if (line.isEmpty() || line.startsWith('#') || line.startsWith(';'))
+                continue;
+            if (line.startsWith('[')) {
+                inRules = line.compare(QStringLiteral("[Rule]"), Qt::CaseInsensitive) == 0;
+                continue;
+            }
+            if (!inRules)
+                continue;
+
+            const auto parts = line.split(',');
+            if (parts.isEmpty())
+                continue;
+
+            const QString type = parts[0].trimmed();
+            if (type.compare(QStringLiteral("FINAL"), Qt::CaseInsensitive) == 0 && parts.size() >= 2) {
+                chain->defaultOutboundID = shadowrocketPolicyToOutbound(parts[1]);
+                continue;
+            }
+            if (type.startsWith(QStringLiteral("USER-AGENT"), Qt::CaseInsensitive) ||
+                type.startsWith(QStringLiteral("AND"), Qt::CaseInsensitive) ||
+                type.startsWith(QStringLiteral("IP-ASN"), Qt::CaseInsensitive) ||
+                type.startsWith(QStringLiteral("URL-REGEX"), Qt::CaseInsensitive)) {
+                continue;
+            }
+            if (parts.size() < 3)
+                continue;
+
+            const QString value = parts[1].trimmed();
+            const QString policy = parts[2].trimmed();
+            const int outbound = shadowrocketPolicyToOutbound(policy);
+            const QString ruleName =
+                QStringLiteral("SR #%1 %2").arg(++ruleCounter).arg(type);
+
+            if (type.compare(QStringLiteral("DOMAIN-SUFFIX"), Qt::CaseInsensitive) == 0) {
+                auto rule = makeShadowrocketRouteRule(outbound, ruleName);
+                rule->domain_suffix << value;
+                chain->Rules << rule;
+            } else if (type.compare(QStringLiteral("DOMAIN"), Qt::CaseInsensitive) == 0) {
+                auto rule = makeShadowrocketRouteRule(outbound, ruleName);
+                rule->domain << value;
+                chain->Rules << rule;
+            } else if (type.compare(QStringLiteral("DOMAIN-KEYWORD"), Qt::CaseInsensitive) == 0) {
+                auto rule = makeShadowrocketRouteRule(outbound, ruleName);
+                rule->domain_keyword << value;
+                chain->Rules << rule;
+            } else if (type.compare(QStringLiteral("GEOIP"), Qt::CaseInsensitive) == 0) {
+                auto rule = makeShadowrocketRouteRule(outbound, ruleName);
+                rule->rule_set << shadowrocketGeoRuleSet(value);
+                chain->Rules << rule;
+            } else if (type.compare(QStringLiteral("IP-CIDR"), Qt::CaseInsensitive) == 0 ||
+                       type.compare(QStringLiteral("IP-CIDR6"), Qt::CaseInsensitive) == 0) {
+                auto rule = makeShadowrocketRouteRule(outbound, ruleName);
+                rule->ip_cidr << value;
+                chain->Rules << rule;
+            }
+        }
+
+        if (chain->Rules.size() <= 1) {
+            if (error != nullptr)
+                *error = QObject::tr("No [Rule] entries found in Shadowrocket config");
+            return nullptr;
+        }
+        return chain;
+    }
+
+    std::shared_ptr<RoutingChain> RoutingChain::LoadShadowrocketConfFile(const QString &path,
+                                                                          QString *error) {
+        const QString content = ReadFileText(path);
+        if (content.isEmpty()) {
+            if (error != nullptr)
+                *error = QObject::tr("Could not read Shadowrocket config file");
+            return nullptr;
+        }
+        return FromShadowrocketConf(content, error);
+    }
+
     std::shared_ptr<RoutingChain> RoutingChain::GetDefaultChain() {
-        auto defaultChain = std::make_shared<RoutingChain>();
-        defaultChain->chain_name = "Default";
-        defaultChain->update_url = "";
-        auto defaultRule = std::make_shared<RouteRule>();
-        defaultRule->name = "Route DNS";
-        defaultRule->action = "hijack-dns";
-        defaultRule->protocol = "dns";
-        defaultChain->Rules << defaultRule;
-        return defaultChain;
+        QString importError;
+        if (auto imported = FromShadowrocketConf(
+                ReadFileText(QStringLiteral(":/silentguard/routing/default_shadowrocket.conf")),
+                &importError)) {
+            imported->chain_name = QObject::tr("Default (Split)");
+            imported->skip_update = true;
+            return imported;
+        }
+
+        auto chain = std::make_shared<RoutingChain>();
+        chain->chain_name = QObject::tr("Default (Split)");
+        chain->defaultOutboundID = proxyID;
+        chain->skip_update = true;
+
+        auto dnsRule = std::make_shared<RouteRule>();
+        dnsRule->name = QStringLiteral("Route DNS");
+        dnsRule->action = QStringLiteral("hijack-dns");
+        dnsRule->protocol = QStringLiteral("dns");
+        chain->Rules << dnsRule;
+
+        auto ruRule = makeShadowrocketRouteRule(directID, QStringLiteral("GeoIP RU -> Direct"));
+        ruRule->rule_set << QStringLiteral("geoip-ru");
+        chain->Rules << ruRule;
+
+        auto lanRule = makeShadowrocketRouteRule(directID, QStringLiteral("Private IP -> Direct"));
+        lanRule->ip_is_private = true;
+        chain->Rules << lanRule;
+
+        auto proxyKeywords = makeShadowrocketRouteRule(proxyID, QStringLiteral("Proxy keywords"));
+        proxyKeywords->domain_keyword << QStringLiteral("google") << QStringLiteral("youtube")
+                                      << QStringLiteral("facebook") << QStringLiteral("twitter")
+                                      << QStringLiteral("instagram") << QStringLiteral("telegram")
+                                      << QStringLiteral("openai") << QStringLiteral("chatgpt");
+        chain->Rules << proxyKeywords;
+
+        auto cnSites = makeShadowrocketRouteRule(directID, QStringLiteral("GeoSite CN -> Direct"));
+        cnSites->rule_set << QStringLiteral("geosite-cn");
+        chain->Rules << cnSites;
+
+        auto cnIp = makeShadowrocketRouteRule(directID, QStringLiteral("GeoIP CN -> Direct"));
+        cnIp->rule_set << QStringLiteral("geoip-cn");
+        chain->Rules << cnIp;
+
+        return chain;
     }
 
     std::shared_ptr<QList<int>> RoutingChain::get_used_outbounds() {
