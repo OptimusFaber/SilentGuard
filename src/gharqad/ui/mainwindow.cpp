@@ -139,8 +139,6 @@ bool toolbarIconsLightOnDark(const QString &theme) {
 }
 
 QIcon tintedToolbarIcon(const QString &resourcePath, bool lightOnDark) {
-  if (!lightOnDark)
-    return QIcon(resourcePath);
   QSvgRenderer renderer(resourcePath);
   if (!renderer.isValid())
     return QIcon(resourcePath);
@@ -150,7 +148,8 @@ QIcon tintedToolbarIcon(const QString &resourcePath, bool lightOnDark) {
   QPainter p(&img);
   renderer.render(&p, QRectF(0, 0, sz.width(), sz.height()));
   p.setCompositionMode(QPainter::CompositionMode_SourceIn);
-  p.fillRect(img.rect(), QColor(0xEB, 0xEC, 0xEF));
+  p.fillRect(img.rect(),
+             lightOnDark ? QColor(0xEB, 0xEC, 0xEF) : QColor(0x1A, 0x1A, 0x1A));
   p.end();
   return QIcon(QPixmap::fromImage(img));
 }
@@ -914,7 +913,17 @@ MainWindow::MainWindow(QWidget *parent)
   });
   connect(ui->menu_start, &QAction::triggered, this, [this]() {
     CHECK_ACTION_ACCESS_W
-    profile_start(-1, !Configs::windowSettings->test_after_start);
+    auto selected = get_now_selected_list();
+    if (selected.isEmpty()) {
+      profile_start(-1, !Configs::windowSettings->test_after_start);
+      return;
+    }
+    const int id = selected.first()->id;
+    if (running != nullptr && id == Configs::dataStore->started_id && !stopping) {
+      profile_stop(false, false, true);
+    } else {
+      profile_start(id, !Configs::windowSettings->test_after_start);
+    }
   });
   connect(ui->menu_stop, &QAction::triggered, this, [this]() {
     CHECK_ACTION_ACCESS_W
@@ -1133,8 +1142,9 @@ skip_updater_hide:
             }
             Configs::tableSettings.column_width[logicalIndex] = newSize;
           });
-  ui->proxyListTable->verticalHeader()->setDefaultSectionSize(26);
-  ui->proxyListTable->verticalHeader()->setMinimumWidth(28);
+  ui->proxyListTable->verticalHeader()->setDefaultSectionSize(30);
+  ui->proxyListTable->verticalHeader()->setMinimumWidth(32);
+  ui->proxyListTable->setSelectionBehavior(QAbstractItemView::SelectRows);
   ui->proxyListTable->verticalHeader()->setSectionsClickable(true);
   ui->proxyListTable->setTabKeyNavigation(false);
   connect(ui->proxyListTable->verticalHeader(), &QHeaderView::sectionClicked, this,
@@ -1146,6 +1156,11 @@ skip_updater_hide:
             const int id = cell->data(114514).toInt();
             if (id < 0)
               return;
+            if (running != nullptr && id == Configs::dataStore->started_id &&
+                !stopping) {
+              profile_stop(false, false, true);
+              return;
+            }
             profile_start(id, !Configs::windowSettings->test_after_start);
           });
 
@@ -1219,7 +1234,7 @@ skip_updater_hide:
     if (Configs::dataStore->started_id >= 0) {
       CHECK_ACTION_ACCESS_W
       profile_start(Configs::dataStore->started_id,
-                    !Configs::windowSettings->test_after_start);
+                    !Configs::windowSettings->test_after_start, true);
     }
   });
   connect(ui->actionRestart_Program, &QAction::triggered, this, [=, this] {
@@ -1509,7 +1524,7 @@ skip_updater_hide:
           Configs::dataStore->Save();
           if (Configs::dataStore->started_id >= 0)
             profile_start(Configs::dataStore->started_id,
-                          !Configs::windowSettings->test_after_start);
+                          !Configs::windowSettings->test_after_start, true);
         },
         Qt::SingleShotConnection);
     ui->menuRouting_Menu->addAction(actionAdblock);
@@ -1598,7 +1613,7 @@ skip_updater_hide:
         Configs::dataStore->routing->Save();
         if (Configs::dataStore->started_id >= 0)
           profile_start(Configs::dataStore->started_id,
-                        !Configs::windowSettings->test_after_start);
+                        !Configs::windowSettings->test_after_start, true);
       });
       ui->menuRouting_Menu->addAction(action);
     }
@@ -2015,7 +2030,7 @@ void MainWindow::dialog_message_impl(const QString &sender,
         StopVPNProcess();
       }
       profile_start(Configs::dataStore->started_id,
-                    !Configs::windowSettings->test_after_start);
+                    !Configs::windowSettings->test_after_start, true);
     }
 
     if (proxyAutoTester) {
@@ -2067,7 +2082,7 @@ void MainWindow::dialog_message_impl(const QString &sender,
                                   tr("Settings changed, restart proxy?")) ==
             QMessageBox::StandardButton::Yes) {
           profile_start(Configs::dataStore->started_id,
-                        !Configs::windowSettings->test_after_start);
+                        !Configs::windowSettings->test_after_start, true);
         }
       }
     }
@@ -2494,7 +2509,7 @@ void MainWindow::set_spmode_vpn(bool enable, bool save, bool requestAdmin) {
     refresh_status();
     if (Configs::dataStore->started_id >= 0)
       profile_start(Configs::dataStore->started_id,
-                    !Configs::windowSettings->test_after_start);
+                    !Configs::windowSettings->test_after_start, true);
   }
 }
 
@@ -2811,7 +2826,9 @@ void MainWindow::refresh_status(const QString &traffic_update) {
   ui->checkBox_VPN->setChecked(Configs::dataStore->spmode_vpn);
   ui->checkBox_SystemProxy->setChecked(Configs::dataStore->spmode_system_proxy);
 
-  ui->label_running->setToolTip({});
+  ui->label_running->setToolTip(
+      running ? tr("Click: latency test · Double-click: disconnect")
+              : QString{});
 
   auto make_title = [=, this](bool isTray) {
     QStringList tt;
@@ -3109,8 +3126,8 @@ void MainWindow::refresh_table_item(
   // Profile selector (theme-aware radio icons from shared QSS pack)
   auto check = f0->clone();
   check->setText({});
-  check->setToolTip(isRunning ? tr("Active profile — click to restart")
-                             : tr("Click to start this profile"));
+  check->setToolTip(isRunning ? tr("Active profile — click to disconnect")
+                             : tr("Click to connect this profile"));
   check->setIcon(isRunning ? QIcon(QStringLiteral(":/qss_icons/rc/radio_checked.svg"))
                            : QIcon(QStringLiteral(":/qss_icons/rc/radio_unchecked.svg")));
   ui->proxyListTable->setVerticalHeaderItem(row, check);
@@ -3847,9 +3864,18 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
     // take over by shortcut_esc
     break;
   case Qt::Key_Enter:
-  case 16777220:
-    profile_start(-1, !Configs::windowSettings->test_after_start);
+  case 16777220: {
+    auto selected = get_now_selected_list();
+    if (selected.isEmpty())
+      break;
+    const int id = selected.first()->id;
+    if (running != nullptr && id == Configs::dataStore->started_id && !stopping) {
+      profile_stop(false, false, true);
+    } else {
+      profile_start(id, !Configs::windowSettings->test_after_start);
+    }
     break;
+  }
   default:
     QMainWindow::keyPressEvent(event);
   }
@@ -4092,10 +4118,16 @@ return_deffer:
 bool MainWindow::eventFilter(QObject *obj, QEvent *event) {
   if (event->type() == QEvent::MouseButtonPress) {
     auto mouseEvent = dynamic_cast<QMouseEvent *>(event);
-    if (obj == ui->label_running && mouseEvent->button() == Qt::LeftButton &&
-        running != nullptr) {
-      url_test_current();
-      return true;
+    if (obj == ui->label_running && running != nullptr) {
+      if (event->type() == QEvent::MouseButtonDblClick) {
+        profile_stop(false, false, true);
+        return true;
+      }
+      if (event->type() == QEvent::MouseButtonPress &&
+          mouseEvent->button() == Qt::LeftButton) {
+        url_test_current();
+        return true;
+      }
     } else if (obj == ui->label_inbound &&
                mouseEvent->button() == Qt::LeftButton) {
       on_menu_basic_settings_triggered();
