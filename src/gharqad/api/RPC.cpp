@@ -18,6 +18,7 @@
 #include <gen-cpp/LibcoreService.h>
 #include <gen-cpp/libcore_types.h>
 #include <QString>
+#include <QThread>
 
 using namespace apache::thrift;
 using namespace apache::thrift::protocol;
@@ -54,24 +55,29 @@ static std::shared_ptr<TTransport> getThriftTransport(){
 }
 
 #define CHANNEL(X, VAL)                                                                 \
-std::shared_ptr<TTransport> socketAA(getThriftTransport());                     \
-std::shared_ptr<TTransport> transportAA(new TBufferedTransport(socketAA));                  \
-std::shared_ptr<TProtocol> protocolAA(new TBinaryProtocol(transportAA));                    \
-libcore::LibcoreServiceClient client(protocolAA);                                         \
 Status status;                                                                          \
 std::optional<libcore::VAL> reply = std::nullopt;                                       \
-try{                                                                                    \
-    transportAA->open();                                                                  \
-    status.ok = true;                                                                   \
-    libcore::VAL resp;                                                                  \
-    client.X(resp, request);                                                            \
-    transportAA->close();                                                                 \
-    reply = std::make_optional(resp);                                                   \
-} catch (TException e){                                                                 \
-    status.ok = false;                                                                  \
-    qDebug() << "HI CRUEL WORLD";                                                       \
-    status.what = e.what();                                                             \
-    qDebug() << QString::fromUtf8(status.what.c_str());                                    \
+for (int _rpcAttempt = 0; _rpcAttempt < 3; ++_rpcAttempt) {                             \
+    try {                                                                               \
+        auto socketAA = getThriftTransport();                                           \
+        auto transportAA = std::shared_ptr<TTransport>(                                 \
+            new TBufferedTransport(socketAA));                                          \
+        auto protocolAA = std::shared_ptr<TProtocol>(                                   \
+            new TBinaryProtocol(transportAA));                                           \
+        libcore::LibcoreServiceClient client(protocolAA);                               \
+        transportAA->open();                                                              \
+        libcore::VAL resp;                                                              \
+        client.X(resp, request);                                                        \
+        transportAA->close();                                                           \
+        status.ok = true;                                                               \
+        reply = std::make_optional(resp);                                               \
+        break;                                                                          \
+    } catch (TException &e) {                                                           \
+        status.ok = false;                                                              \
+        status.what = e.what();                                                         \
+        if (_rpcAttempt < 2)                                                            \
+            QThread::msleep(80);                                                        \
+    }                                                                                   \
 }
 
 #define NOT_OK                                                      \
