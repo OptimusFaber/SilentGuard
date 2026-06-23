@@ -123,19 +123,20 @@ void setAppIcon(Icon::TrayIconStatus, QSystemTrayIcon *, MainWindow *window);
 
 namespace {
 
-/** Light monochrome toolbar icons on dark surfaces (Dark / AMOLED / Windows11 dark). */
-bool toolbarIconsLightOnDark(const QString &theme) {
-  const QString t = theme.toLower();
-  if (t == "dark" || t == "amoled")
+/** White toolbar icons on dark themes, black on light themes. */
+bool toolbarIconsUseLightColor(const QString &theme) {
+  switch (ThemeManager::getMode(theme)) {
+  case 1:
     return true;
-  if (t == "windows11") {
+  case 2:
+    return false;
+  default:
 #if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
     return QGuiApplication::styleHints()->colorScheme() == Qt::ColorScheme::Dark;
 #else
     return ::isDarkMode();
 #endif
   }
-  return false;
 }
 
 QIcon tintedToolbarIcon(const QString &resourcePath, bool lightOnDark) {
@@ -148,8 +149,7 @@ QIcon tintedToolbarIcon(const QString &resourcePath, bool lightOnDark) {
   QPainter p(&img);
   renderer.render(&p, QRectF(0, 0, sz.width(), sz.height()));
   p.setCompositionMode(QPainter::CompositionMode_SourceIn);
-  p.fillRect(img.rect(),
-             lightOnDark ? QColor(0xEB, 0xEC, 0xEF) : QColor(0x1A, 0x1A, 0x1A));
+  p.fillRect(img.rect(), lightOnDark ? Qt::white : Qt::black);
   p.end();
   return QIcon(QPixmap::fromImage(img));
 }
@@ -165,7 +165,17 @@ void MainWindow::refreshToolbarIcons() {
   const QString theme = themeManager->current_theme.isEmpty()
                             ? Configs::windowSettings->theme
                             : themeManager->current_theme;
-  const bool light = toolbarIconsLightOnDark(theme);
+  const bool light = toolbarIconsUseLightColor(theme);
+  const QString fg = light ? QStringLiteral("#FFFFFF") : QStringLiteral("#000000");
+  const QString toolButtonStyle =
+      QStringLiteral("QToolButton { color: %1; background: transparent; border: none; }"
+                     "QToolButton:hover { color: %1; }")
+          .arg(fg);
+  for (auto *button :
+       {ui->toolButton_program, ui->toolButton_server, ui->toolButton_preferences,
+        ui->toolButton_routing, ui->toolButton_update}) {
+    button->setStyleSheet(toolButtonStyle);
+  }
   ui->toolButton_program->setIcon(
       tintedToolbarIcon(QStringLiteral(":/icon/b-system-run.svg"), light));
   ui->toolButton_server->setIcon(
@@ -223,6 +233,7 @@ void MainWindow::changeEvent(QEvent *event) {
         "QGroupBox { background: transparent; border: none; }");
     if (type == QEvent::PaletteChange || type == QEvent::StyleChange ||
         type == QEvent::Style) {
+      refreshToolbarIcons();
       refresh_proxy_list(-1);
     }
     break;
