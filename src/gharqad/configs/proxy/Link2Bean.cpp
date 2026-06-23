@@ -244,6 +244,10 @@ static void add_tls(std::shared_ptr<V2rayStreamSettings> stream, QUrlQuery & que
             flow = GetQueryValue(query, "flow", "");
             encryption = GetQueryValue(query, "encryption", "");
             stream->packet_encoding = GetQueryValue(query, "packetEncoding", "xudp");
+            if (flow.isEmpty() && !stream->reality_pbk.trimmed().isEmpty() &&
+                (stream->network.isEmpty() || stream->network == "tcp")) {
+                flow = QStringLiteral("xtls-rprx-vision");
+            }
         }
 
         return !(password.isEmpty() || entity->serverAddress.isEmpty());

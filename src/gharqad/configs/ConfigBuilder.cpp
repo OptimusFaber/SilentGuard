@@ -459,6 +459,8 @@ namespace Configs {
 
             if (!IsIpAddress(serverAddress)) {
                 status->domainListDNSDirect += serverAddress;
+            } else if (!status->proxyServerIPs.contains(serverAddress)) {
+                status->proxyServerIPs += serverAddress;
             }
 
             if (bean->IsEndpoint())
@@ -546,6 +548,11 @@ namespace Configs {
             }
             outbound["multiplex"] = muxObj;
         }
+
+        if (ent->type == "vless" || ent->type == "vmess" || ent->type == "trojan") {
+            outbound["domain_strategy"] = QStringLiteral("prefer_ipv4");
+            outbound["connect_timeout"] = QStringLiteral("10s");
+        }
     }
 
     // SingBox
@@ -556,7 +563,7 @@ namespace Configs {
 //#ifdef Q_OS_LINUX
 //        usingSystemdResolved = ReadFileText("/etc/resolv.conf").contains("systemd-resolved");
 //#endif
-        if (address.startsWith("local"))
+        if (address.startsWith("local") || address == "localhost")
         {
  //           if (tunEnabled && usingSystemdResolved)
  //           {
@@ -631,7 +638,8 @@ namespace Configs {
         return res;
     }
 
-    QJsonObject BuildTunInbound(const QStringList &directIPSets, const QStringList &directIPCIDRs){
+    QJsonObject BuildTunInbound(const QStringList &directIPSets, const QStringList &directIPCIDRs,
+                                const QStringList &proxyServerIPs){
         QJsonObject inboundObj;
         inboundObj["tag"] = "tun-in";
         inboundObj["type"] = "tun";
@@ -652,6 +660,12 @@ namespace Configs {
         inboundObj["address"] = tunAddress;
 
         QJsonArray routeExcludeAddrs = QListStr2QJsonArray(Configs::dataStore->route_exclude_addrs);
+        for (const auto &ip : proxyServerIPs) {
+            if (ip.isEmpty())
+                continue;
+            const QString cidr = ip.contains('/') ? ip : ip + QStringLiteral("/32");
+            routeExcludeAddrs.append(cidr);
+        }
         QJsonArray routeExcludeSets;
         if (dataStore->enable_tun_routing)
         {
@@ -800,7 +814,7 @@ namespace Configs {
 
         // tun-in
         if ((dataStore->spmode_vpn && !status->forTest) || blockAll) {
-            status->inbounds += BuildTunInbound(directIPSets, directIPCIDRs);
+            status->inbounds += BuildTunInbound(directIPSets, directIPCIDRs, status->proxyServerIPs);
         }
 
         // ntp
@@ -817,6 +831,7 @@ namespace Configs {
         status->outbounds += QJsonObject{
             {"type", "direct"},
             {"tag", "direct"},
+            {"domain_strategy", QStringLiteral("prefer_ipv4")},
         };
         status->outbounds += QJsonObject{
             {"type", "block"},
@@ -920,6 +935,54 @@ namespace Configs {
 
             // tun process routing
             if (dataStore->spmode_vpn && !status->forTest){
+                QJsonArray bootstrapRules;
+                if (!status->proxyServerIPs.isEmpty()) {
+                    QJsonArray proxyCidrs;
+                    for (const auto &ip : status->proxyServerIPs) {
+                        if (ip.isEmpty())
+                            continue;
+                        proxyCidrs.append(ip.contains('/') ? ip : ip + QStringLiteral("/32"));
+                    }
+                    if (!proxyCidrs.isEmpty()) {
+                        bootstrapRules.append(QJsonObject{
+                            {"action", "route"},
+                            {"outbound", "direct"},
+                            {"ip_cidr", proxyCidrs},
+                        });
+                    }
+                }
+                // Keep mesh VPN clients (ZeroTier, Tailscale) off the proxy tunnel.
+                QJsonArray meshDirectRules;
+#ifdef Q_OS_WIN
+                meshDirectRules.append(QJsonObject({
+                    {"action", "route"},
+                    {"outbound", "direct"},
+                    {"inbound", QJsonArray{"tun-in"}},
+                    {"process_path_regex", QJsonArray{
+                        QStringLiteral("(?i).*\\\\ZeroTier\\\\.*\\.exe$"),
+                        QStringLiteral("(?i).*\\\\Tailscale\\\\.*\\.exe$"),
+                    }},
+                }));
+#else
+                meshDirectRules.append(QJsonObject({
+                    {"action", "route"},
+                    {"outbound", "direct"},
+                    {"inbound", QJsonArray{"tun-in"}},
+                    {"process_path_regex", QJsonArray{
+                        QStringLiteral("(?i).*/zerotier-one$"),
+                        QStringLiteral("(?i).*/tailscale(d)?$"),
+                    }},
+                }));
+#endif
+                QJsonArray mergedRouteRules;
+                for (const auto &rule : bootstrapRules)
+                    mergedRouteRules.append(rule);
+                for (const auto &rule : meshDirectRules)
+                    mergedRouteRules.append(rule);
+                for (const auto &rule : routeRules)
+                    mergedRouteRules.append(rule);
+                routeRules = mergedRouteRules;
+
                 auto split = dataStore->routing->tun_split;
                 if (split->proxy.size() > 0){
                     routeRules += QJsonObject({
@@ -1119,6 +1182,10 @@ namespace Configs {
 
         dns["servers"] = dnsServers;
         dns["rules"] = dnsRules;
+        if (!blockAll) {
+            dns["final"] = dataStore->routing->dns_final_out_direct ? QStringLiteral("dns-direct")
+                                                                    : QStringLiteral("dns-remote");
+        }
 
         if (dataStore->routing->use_dns_object) {
             dns = QString2QJsonObject(dataStore->routing->dns_object);

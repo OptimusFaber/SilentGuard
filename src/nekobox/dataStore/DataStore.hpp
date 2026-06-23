@@ -56,7 +56,7 @@ namespace Configs {
         // DNS
         QString remote_dns = "tls://8.8.8.8";
         QString remote_dns_strategy = "";
-        QString direct_dns = "localhost";
+        QString direct_dns = "local";
         QString direct_dns_strategy = "";
         bool use_dns_object = false;
         QString dns_object = "";

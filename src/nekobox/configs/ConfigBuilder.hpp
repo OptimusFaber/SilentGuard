@@ -53,6 +53,7 @@ namespace Configs {
         // xxList is V2Ray format string list
 
         QStringList domainListDNSDirect;
+        QStringList proxyServerIPs;
 
         // config format
 
@@ -89,6 +90,7 @@ namespace Configs {
 
     QString get_jsdelivr_link(QString link);
 
-    QJsonObject BuildTunInbound(const QStringList &directIPSets, const QStringList &directIPCIDRs);
+    QJsonObject BuildTunInbound(const QStringList &directIPSets, const QStringList &directIPCIDRs,
+                                const QStringList &proxyServerIPs = {});
 
 } // namespace Configs
