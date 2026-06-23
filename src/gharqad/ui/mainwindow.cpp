@@ -919,7 +919,8 @@ MainWindow::MainWindow(QWidget *parent)
       return;
     }
     const int id = selected.first()->id;
-    if (running != nullptr && id == Configs::dataStore->started_id && !stopping) {
+    if (running != nullptr && id == Configs::dataStore->started_id &&
+        Configs::dataStore->started_id >= 0) {
       profile_stop(false, false, true);
     } else {
       profile_start(id, !Configs::windowSettings->test_after_start);
@@ -1157,7 +1158,7 @@ skip_updater_hide:
             if (id < 0)
               return;
             if (running != nullptr && id == Configs::dataStore->started_id &&
-                !stopping) {
+                Configs::dataStore->started_id >= 0) {
               profile_stop(false, false, true);
               return;
             }
@@ -3869,7 +3870,8 @@ void MainWindow::keyPressEvent(QKeyEvent *event) {
     if (selected.isEmpty())
       break;
     const int id = selected.first()->id;
-    if (running != nullptr && id == Configs::dataStore->started_id && !stopping) {
+    if (running != nullptr && id == Configs::dataStore->started_id &&
+        Configs::dataStore->started_id >= 0) {
       profile_stop(false, false, true);
     } else {
       profile_start(id, !Configs::windowSettings->test_after_start);
