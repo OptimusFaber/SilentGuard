@@ -174,7 +174,7 @@ public:
 
     void update_traffic_graph(int proxyDl, int proxyUp, int directDl, int directUp);
 
-    void profile_start(int _id, bool do_not_test);
+    void profile_start(int _id, bool do_not_test, bool force_restart = false);
 
     void set_icons();
 

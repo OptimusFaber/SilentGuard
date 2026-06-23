@@ -42,12 +42,6 @@ void MainWindow::setup_rpc() {
     defaultClient = new Client(
         [=](const QString &errStr) {
             MW_show_log("[Error] Core: " + errStr);
-            runOnUiThread([=] {
-                if (Configs::dataStore->started_id >= 0) {
-                    if (auto *mw = GetMainWindow())
-                        mw->setTrayCoreError(true);
-                }
-            });
         }
     );
 
@@ -556,7 +550,7 @@ bool MainWindow::set_system_dns(bool set, bool save_set) {
     return true;
 }
 
-void MainWindow::profile_start(int _id, bool do_not_test) {
+void MainWindow::profile_start(int _id, bool do_not_test, bool force_restart) {
     
     if (Configs::dataStore->prepare_exit) return;
 #ifdef Q_OS_UNIX
@@ -583,6 +577,11 @@ void MainWindow::profile_start(int _id, bool do_not_test) {
 */
     auto group = Configs::profileManager->GetGroup(ent->gid);
     if (group == nullptr || group->archive) return;
+
+    if (!force_restart && running != nullptr && ent->id == running->id &&
+        Configs::dataStore->started_id == ent->id) {
+        return;
+    }
 
     setTrayCoreError(false);
 
@@ -663,14 +662,18 @@ void MainWindow::profile_start(int _id, bool do_not_test) {
     if (!Configs::dataStore->core_running) {
         runOnThread(
             [=, this] {
-//                MW_show_log(tr("Try to start the config, but the core has not listened to the RPC port, so restart it..."));
                 core_process->start_profile_when_core_is_up = ent->id;
- //               core_process->Restart();
+                core_process->Restart();
             },
             DS_cores);
         mu_starting.unlock();
-        return; // let CoreProcess call profile_start when core is up
+        return;
     }
+
+    const bool switchingProfile =
+        running != nullptr && running->id != ent->id;
+    const bool needsRestart = force_restart && running != nullptr &&
+                              running->id == ent->id;
 
     // timeout message
     auto restartMsgbox = new QMessageBox(QMessageBox::Question, software_name, tr("If there is no response for a long time, it is recommended to restart the software."), QMessageBox::Yes | QMessageBox::No, this);
@@ -678,10 +681,14 @@ void MainWindow::profile_start(int _id, bool do_not_test) {
     auto restartMsgboxTimer = new MessageBoxTimer(this, restartMsgbox, 10000);
     QMutex * mutex = new QMutex();
     mutex->lock();
-    runOnUiThread([this, mutex](){
-        profile_stop(false, true, true);
-        mutex->unlock();
-    });
+    if (switchingProfile || needsRestart) {
+        runOnUiThread([this, mutex](){
+            profile_stop(false, true, true);
+            mutex->unlock();
+        });
+    } else {
+        runOnUiThread([mutex](){ mutex->unlock(); });
+    }
     runOnNewThread([=, this] {
         mutex->lock();
         mutex->unlock();
