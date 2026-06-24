@@ -163,6 +163,8 @@ namespace Configs {
 
         static std::shared_ptr<RoutingChain> GetDefaultChain();
 
+        static std::shared_ptr<RoutingChain> GetPresetChain(const QString &preset);
+
         static std::shared_ptr<RoutingChain> FromShadowrocketConf(const QString &content,
                                                                   QString *error = nullptr);
 

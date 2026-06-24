@@ -601,6 +601,56 @@ namespace Configs {
         return rule;
     }
 
+    std::shared_ptr<RouteRule> makeDnsHijackRule() {
+        auto dnsRule = std::make_shared<RouteRule>();
+        dnsRule->name = QStringLiteral("Route DNS");
+        dnsRule->action = QStringLiteral("hijack-dns");
+        dnsRule->protocol = QStringLiteral("dns");
+        return dnsRule;
+    }
+
+    std::shared_ptr<RouteRule> makeQuicBlockRule() {
+        auto rule = std::make_shared<RouteRule>();
+        rule->name = QStringLiteral("Block QUIC (UDP/443)");
+        rule->action = QStringLiteral("reject");
+        rule->network = QStringLiteral("udp");
+        rule->port << QStringLiteral("443");
+        rule->outboundID = blockID;
+        rule->no_drop = true;
+        return rule;
+    }
+
+    void appendProxyKeywords(const std::shared_ptr<RoutingChain> &chain) {
+        auto proxyKeywords = makeShadowrocketRouteRule(proxyID, QStringLiteral("Proxy keywords"));
+        proxyKeywords->domain_keyword << QStringLiteral("google") << QStringLiteral("youtube")
+                                      << QStringLiteral("facebook") << QStringLiteral("twitter")
+                                      << QStringLiteral("instagram") << QStringLiteral("telegram")
+                                      << QStringLiteral("openai") << QStringLiteral("chatgpt");
+        chain->Rules << proxyKeywords;
+    }
+
+    void appendRegionalDirectRules(const std::shared_ptr<RoutingChain> &chain, bool ru, bool cn) {
+        if (ru) {
+            auto ruRule = makeShadowrocketRouteRule(directID, QStringLiteral("GeoIP RU -> Direct"));
+            ruRule->rule_set << QStringLiteral("geoip-ru");
+            chain->Rules << ruRule;
+        }
+
+        auto lanRule = makeShadowrocketRouteRule(directID, QStringLiteral("Private IP -> Direct"));
+        lanRule->ip_is_private = true;
+        chain->Rules << lanRule;
+
+        if (cn) {
+            auto cnSites = makeShadowrocketRouteRule(directID, QStringLiteral("GeoSite CN -> Direct"));
+            cnSites->rule_set << QStringLiteral("geosite-cn");
+            chain->Rules << cnSites;
+
+            auto cnIp = makeShadowrocketRouteRule(directID, QStringLiteral("GeoIP CN -> Direct"));
+            cnIp->rule_set << QStringLiteral("geoip-cn");
+            chain->Rules << cnIp;
+        }
+    }
+
     } // namespace
 
     std::shared_ptr<RoutingChain> RoutingChain::FromShadowrocketConf(const QString &content,
@@ -701,42 +751,27 @@ namespace Configs {
         return FromShadowrocketConf(content, error);
     }
 
-    std::shared_ptr<RoutingChain> RoutingChain::GetDefaultChain() {
+    std::shared_ptr<RoutingChain> RoutingChain::GetPresetChain(const QString &preset) {
+        const QString key = preset.trimmed().toLower();
         auto chain = std::make_shared<RoutingChain>();
-        chain->chain_name = QObject::tr("Default (Split)");
         chain->defaultOutboundID = proxyID;
         chain->skip_update = true;
+        chain->Rules << makeDnsHijackRule();
+        chain->Rules << makeQuicBlockRule();
 
-        auto dnsRule = std::make_shared<RouteRule>();
-        dnsRule->name = QStringLiteral("Route DNS");
-        dnsRule->action = QStringLiteral("hijack-dns");
-        dnsRule->protocol = QStringLiteral("dns");
-        chain->Rules << dnsRule;
-
-        auto ruRule = makeShadowrocketRouteRule(directID, QStringLiteral("GeoIP RU -> Direct"));
-        ruRule->rule_set << QStringLiteral("geoip-ru");
-        chain->Rules << ruRule;
-
-        auto lanRule = makeShadowrocketRouteRule(directID, QStringLiteral("Private IP -> Direct"));
-        lanRule->ip_is_private = true;
-        chain->Rules << lanRule;
-
-        auto proxyKeywords = makeShadowrocketRouteRule(proxyID, QStringLiteral("Proxy keywords"));
-        proxyKeywords->domain_keyword << QStringLiteral("google") << QStringLiteral("youtube")
-                                      << QStringLiteral("facebook") << QStringLiteral("twitter")
-                                      << QStringLiteral("instagram") << QStringLiteral("telegram")
-                                      << QStringLiteral("openai") << QStringLiteral("chatgpt");
-        chain->Rules << proxyKeywords;
-
-        auto cnSites = makeShadowrocketRouteRule(directID, QStringLiteral("GeoSite CN -> Direct"));
-        cnSites->rule_set << QStringLiteral("geosite-cn");
-        chain->Rules << cnSites;
-
-        auto cnIp = makeShadowrocketRouteRule(directID, QStringLiteral("GeoIP CN -> Direct"));
-        cnIp->rule_set << QStringLiteral("geoip-cn");
-        chain->Rules << cnIp;
-
+        if (key == QStringLiteral("cn") || key == QStringLiteral("china")) {
+            chain->chain_name = QObject::tr("China (Split)");
+            appendRegionalDirectRules(chain, false, true);
+        } else {
+            chain->chain_name = QObject::tr("Russia (Split)");
+            appendRegionalDirectRules(chain, true, true);
+            appendProxyKeywords(chain);
+        }
         return chain;
+    }
+
+    std::shared_ptr<RoutingChain> RoutingChain::GetDefaultChain() {
+        return GetPresetChain(QStringLiteral("ru"));
     }
 
     std::shared_ptr<QList<int>> RoutingChain::get_used_outbounds() {
