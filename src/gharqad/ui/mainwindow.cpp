@@ -168,8 +168,12 @@ void MainWindow::refreshToolbarIcons() {
   const bool light = toolbarIconsUseLightColor(theme);
   const QString fg = light ? QStringLiteral("#FFFFFF") : QStringLiteral("#000000");
   const QString toolButtonStyle =
-      QStringLiteral("QToolButton { color: %1; background: transparent; border: none; }"
-                     "QToolButton:hover { color: %1; }")
+      QStringLiteral(
+          "QToolButton { color: %1; background: transparent; border: none; }"
+          "QToolButton:hover { color: %1; }"
+          "QToolButton::menu-indicator { image: none; width: 0px; height: 0px; }"
+          "QToolButton::menu-button { width: 0px; border: none; padding: 0px; }"
+          "QToolButton::menu-arrow { image: none; width: 0px; height: 0px; }")
           .arg(fg);
   for (auto *button :
        {ui->toolButton_program, ui->toolButton_server, ui->toolButton_preferences,
