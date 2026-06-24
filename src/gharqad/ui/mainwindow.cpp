@@ -154,6 +154,18 @@ QIcon tintedToolbarIcon(const QString &resourcePath, bool lightOnDark) {
   return QIcon(QPixmap::fromImage(img));
 }
 
+QIcon profileRadioIcon(bool checked, const QString &theme) {
+  return tintedToolbarIcon(
+      checked ? QStringLiteral(":/qss_icons/rc/radio_checked.svg")
+              : QStringLiteral(":/qss_icons/rc/radio_unchecked.svg"),
+      toolbarIconsUseLightColor(theme));
+}
+
+QString currentUiTheme() {
+  return themeManager->current_theme.isEmpty() ? Configs::windowSettings->theme
+                                               : themeManager->current_theme;
+}
+
 } // namespace
 
 void MainWindow::set_icons() {
@@ -162,9 +174,7 @@ void MainWindow::set_icons() {
 }
 
 void MainWindow::refreshToolbarIcons() {
-  const QString theme = themeManager->current_theme.isEmpty()
-                            ? Configs::windowSettings->theme
-                            : themeManager->current_theme;
+  const QString theme = currentUiTheme();
   const bool light = toolbarIconsUseLightColor(theme);
   const QString fg = light ? QStringLiteral("#FFFFFF") : QStringLiteral("#000000");
   const QString toolButtonStyle =
@@ -175,10 +185,16 @@ void MainWindow::refreshToolbarIcons() {
           "QToolButton::menu-button { width: 0px; border: none; padding: 0px; }"
           "QToolButton::menu-arrow { image: none; width: 0px; height: 0px; }")
           .arg(fg);
+  const QString checkBoxStyle =
+      QStringLiteral("QCheckBox { color: %1; spacing: 4px; }").arg(fg);
   for (auto *button :
        {ui->toolButton_program, ui->toolButton_server, ui->toolButton_preferences,
         ui->toolButton_routing, ui->toolButton_update}) {
     button->setStyleSheet(toolButtonStyle);
+  }
+  for (auto *box :
+       {ui->checkBox_VPN, ui->checkBox_SystemProxy, ui->system_dns}) {
+    box->setStyleSheet(checkBoxStyle);
   }
   ui->toolButton_program->setIcon(
       tintedToolbarIcon(QStringLiteral(":/icon/b-system-run.svg"), light));
@@ -190,6 +206,16 @@ void MainWindow::refreshToolbarIcons() {
       tintedToolbarIcon(QStringLiteral(":/icon/b-network-routing.svg"), light));
   ui->toolButton_update->setIcon(
       tintedToolbarIcon(QStringLiteral(":/icon/b-system-software-update.svg"), light));
+
+  for (int row = 0; row < ui->proxyListTable->rowCount(); ++row) {
+    auto *header = ui->proxyListTable->verticalHeaderItem(row);
+    if (header == nullptr)
+      continue;
+    const int profileId = header->data(114514).toInt();
+    const bool running =
+        profileId >= 0 && profileId == Configs::dataStore->started_id;
+    header->setIcon(profileRadioIcon(running, theme));
+  }
 }
 
 SelectDialog::SelectDialog(QWidget *parent,
@@ -1611,6 +1637,41 @@ skip_updater_hide:
       */
 
     mu_remoteRouteProfiles.unlock();
+
+    auto *importConf = new QAction(tr("Import Shadowrocket (.conf)..."), ui->menuRouting_Menu);
+    connect(importConf, &QAction::triggered, this, [this]() {
+      CHECK_ACTION_ACCESS_W
+      const QString path = QFileDialog::getOpenFileName(
+          this, tr("Import Shadowrocket config"), QString(),
+          tr("Shadowrocket config (*.conf);;Text (*.txt);;All files (*)"));
+      if (path.isEmpty())
+        return;
+      QString err;
+      auto chain = Configs::RoutingChain::LoadShadowrocketConfFile(path, &err);
+      if (chain == nullptr) {
+        MessageBoxWarning(tr("Import failed"), err);
+        return;
+      }
+      chain->chain_name = QFileInfo(path).completeBaseName();
+      chain->skip_update = true;
+      Configs::profileManager->AddRouteChain(chain);
+      Configs::dataStore->routing->current_route_id = chain->id;
+      Configs::dataStore->routing->Save();
+      if (Configs::dataStore->started_id >= 0) {
+        profile_start(Configs::dataStore->started_id,
+                      !Configs::windowSettings->test_after_start, true);
+      }
+      MessageBoxInfo(tr("Import complete"),
+                     tr("Imported %1 routing rules. Profile: %2")
+                         .arg(chain->Rules.size() - 1)
+                         .arg(chain->chain_name));
+    });
+    ui->menuRouting_Menu->addAction(importConf);
+
+    auto *routingSettings = new QAction(tr("Routing settings..."), ui->menuRouting_Menu);
+    connect(routingSettings, &QAction::triggered, this,
+            &MainWindow::on_menu_routing_settings_triggered);
+    ui->menuRouting_Menu->addAction(routingSettings);
 
     ui->menuRouting_Menu->addSeparator();
     for (const auto &route : Configs::profileManager->routes) {
@@ -3144,8 +3205,7 @@ void MainWindow::refresh_table_item(
   check->setText({});
   check->setToolTip(isRunning ? tr("Active profile — click to disconnect")
                              : tr("Click to connect this profile"));
-  check->setIcon(isRunning ? QIcon(QStringLiteral(":/qss_icons/rc/radio_checked.svg"))
-                           : QIcon(QStringLiteral(":/qss_icons/rc/radio_unchecked.svg")));
+  check->setIcon(profileRadioIcon(isRunning, currentUiTheme()));
   ui->proxyListTable->setVerticalHeaderItem(row, check);
 
   // C0: Type

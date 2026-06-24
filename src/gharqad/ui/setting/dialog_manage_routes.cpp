@@ -153,10 +153,21 @@ DialogManageRoutes::DialogManageRoutes(QWidget *parent, bool EditRouteProfiles) 
 
     if (auto *routeButtons = ui->new_route->parentWidget()) {
         if (auto *layout = qobject_cast<QHBoxLayout *>(routeButtons->layout())) {
-            auto *importShadowrocket = new QPushButton(tr("Import Shadowrocket..."), routeButtons);
+            auto *importShadowrocket = new QPushButton(tr("Import Shadowrocket (.conf)..."), routeButtons);
             layout->insertWidget(layout->indexOf(ui->export_route) + 1, importShadowrocket);
             connect(importShadowrocket, &QPushButton::clicked, this,
                     &DialogManageRoutes::on_import_shadowrocket_clicked);
+
+            auto *addPreset = new QPushButton(tr("Add preset..."), routeButtons);
+            layout->insertWidget(layout->indexOf(ui->export_route) + 2, addPreset);
+            auto *presetMenu = new QMenu(addPreset);
+            presetMenu->addAction(tr("Russia (RU/CN direct, proxy rest)"), this, [this]() {
+                on_add_preset_clicked(QStringLiteral("ru"));
+            });
+            presetMenu->addAction(tr("China (CN direct, proxy rest)"), this, [this]() {
+                on_add_preset_clicked(QStringLiteral("cn"));
+            });
+            addPreset->setMenu(presetMenu);
         }
     }
 
@@ -363,7 +374,7 @@ void DialogManageRoutes::on_delete_route_clicked() {
 void DialogManageRoutes::on_import_shadowrocket_clicked() {
     const QString path = QFileDialog::getOpenFileName(
         this, tr("Import Shadowrocket config"), QString(),
-        tr("Shadowrocket config (*.conf *.txt);;All files (*)"));
+        tr("Shadowrocket config (*.conf);;Text (*.txt);;All files (*)"));
     if (path.isEmpty())
         return;
 
@@ -385,4 +396,14 @@ void DialogManageRoutes::on_import_shadowrocket_clicked() {
     MessageBoxInfo(tr("Import complete"),
                    tr("Imported %1 routing rules from Shadowrocket config.")
                        .arg(chain->Rules.size() - 1));
+}
+
+void DialogManageRoutes::on_add_preset_clicked(const QString &preset) {
+    auto chain = Configs::RoutingChain::GetPresetChain(preset);
+    Configs::profileManager->AddRouteChain(chain);
+    chainList << chain;
+    currentRoute = chain;
+    Configs::dataStore->routing->current_route_id = chain->id;
+    reloadProfileItems();
+    ui->route_profiles->setCurrentRow(chainList.size() - 1);
 }

@@ -68,4 +68,6 @@ public slots:
     void on_delete_route_clicked();
 
     void on_import_shadowrocket_clicked();
+
+    void on_add_preset_clicked(const QString &preset);
 };
