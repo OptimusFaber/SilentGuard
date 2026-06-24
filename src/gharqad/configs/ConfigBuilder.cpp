@@ -525,8 +525,12 @@ namespace Configs {
             needMux = false;
         }
 
-        if (ent->type == "vless" && outbound["flow"] != "") {
-            needMux = false;
+        if (ent->type == "vless") {
+            if (outbound["flow"] != "") {
+                needMux = false;
+            } else if (stream != nullptr && !stream->reality_pbk.trimmed().isEmpty()) {
+                needMux = false;
+            }
         }
 
         // common
@@ -1105,7 +1109,12 @@ namespace Configs {
             dnsServers += tailDns;
         } else
         {
-            auto remoteDnsObj = BuildDnsObject(dataStore->routing->remote_dns, dataStore->spmode_vpn);
+            QString remoteDnsAddress = dataStore->routing->remote_dns;
+            if (remoteDnsAddress == QStringLiteral("tls://8.8.8.8") ||
+                remoteDnsAddress == QStringLiteral("tls://8.8.4.4")) {
+                remoteDnsAddress = QStringLiteral("https://dns.google/dns-query");
+            }
+            auto remoteDnsObj = BuildDnsObject(remoteDnsAddress, dataStore->spmode_vpn);
             remoteDnsObj["tag"] = "dns-remote";
             remoteDnsObj["domain_resolver"] = "dns-local";
             remoteDnsObj["detour"] = tagProxy;
@@ -1229,10 +1238,9 @@ namespace Configs {
         dns["servers"] = dnsServers;
         dns["rules"] = dnsRules;
         if (!blockAll) {
-            const bool dnsFinalDirect = dataStore->routing->dns_final_out_direct ||
-                                        routeChain->defaultOutboundID == directID;
-            dns["final"] = dnsFinalDirect ? QStringLiteral("dns-direct")
-                                          : QStringLiteral("dns-remote");
+            dns["final"] = dataStore->routing->dns_final_out_direct ? QStringLiteral("dns-direct")
+                                                                    : QStringLiteral("dns-remote");
+            dns["independent_cache"] = true;
         }
 
         if (dataStore->routing->use_dns_object) {

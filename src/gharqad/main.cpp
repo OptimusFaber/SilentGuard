@@ -341,6 +341,21 @@ int main(int argc, char** argv) {
     if (!isLoaded) {
         Configs::dataStore->routing->Save();
     }
+    Configs::dataStore->routing->MigrateLegacyDnsSettings();
+
+    {
+        bool settingsChanged = false;
+        const auto fixTestUrl = [](QString &url) {
+            if (url.contains(QStringLiteral("cp.cloudflare.com"))) {
+                url = QStringLiteral("https://www.gstatic.com/generate_204");
+                return true;
+            }
+            return false;
+        };
+        if (fixTestUrl(Configs::dataStore->test_latency_url)) settingsChanged = true;
+        if (fixTestUrl(Configs::dataStore->auto_test_target_url)) settingsChanged = true;
+        if (settingsChanged) Configs::dataStore->Save();
+    }
 
     Configs::windowSettings->shortcuts = std::make_unique<class Configs::Shortcuts>();
   //  Configs::windowSettings->shortcuts->fn = "shortcuts.cfg";

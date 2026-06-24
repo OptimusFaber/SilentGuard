@@ -60,7 +60,7 @@ namespace Configs {
         QString direct_dns_strategy = "";
         bool use_dns_object = false;
         QString dns_object = "";
-        bool dns_final_out_direct = false;
+        bool dns_final_out_direct = true;
         QString ruleset_json_url = "https://github.com/qr243vbi/ruleset/"
             "raw/refs/heads/rule-set/srslist.json";
 
@@ -73,6 +73,8 @@ namespace Configs {
         std::shared_ptr<TunSplit> tun_split = std::make_shared<TunSplit>();
 
         explicit Routing(int preset = 0);
+
+        void MigrateLegacyDnsSettings();
 
         static QStringList List();
     };

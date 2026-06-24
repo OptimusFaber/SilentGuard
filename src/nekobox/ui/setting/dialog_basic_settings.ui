@@ -1311,7 +1311,7 @@ binary — 2026 — arbitrary byte-values format (fixed 7-byte header magic) use
           <string>URL to test proxies against</string>
          </property>
          <property name="text">
-          <string>http://cp.cloudflare.com/</string>
+          <string>https://www.gstatic.com/generate_204</string>
          </property>
         </widget>
        </item>

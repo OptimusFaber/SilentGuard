@@ -549,6 +549,24 @@ QByteArray hash = QCryptographicHash::hash(
         if (!Preset::SingBox::DomainStrategy.contains(outbound_domain_strategy)) outbound_domain_strategy = "";
     }
 
+    void Routing::MigrateLegacyDnsSettings() {
+        bool changed = false;
+        const bool legacyRemoteDns =
+            remote_dns == QStringLiteral("tls://8.8.8.8") ||
+            remote_dns == QStringLiteral("tls://8.8.4.4") ||
+            remote_dns == QStringLiteral("8.8.8.8") ||
+            remote_dns == QStringLiteral("8.8.4.4");
+
+        if (legacyRemoteDns) {
+            remote_dns = QStringLiteral("https://dns.google/dns-query");
+            dns_final_out_direct = true;
+            changed = true;
+        }
+        if (changed) {
+            Save();
+        }
+    }
+
     DECL_MAP(Routing)
         ADD_MAP("current_route_id", current_route_id, integer);
         ADD_MAP("remote_dns", remote_dns, string);
