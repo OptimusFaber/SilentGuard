@@ -550,10 +550,6 @@ namespace Configs {
             outbound["multiplex"] = muxObj;
         }
 
-        if (ent->type == "vless" || ent->type == "vmess" || ent->type == "trojan") {
-            outbound["domain_strategy"] = QStringLiteral("prefer_ipv4");
-            outbound["connect_timeout"] = QStringLiteral("10s");
-        }
     }
 
     // SingBox
@@ -726,6 +722,12 @@ namespace Configs {
         QJsonArray directSuffixes;
         QJsonArray directKeywords;
         QJsonArray directRegexes;
+        bool needProxyDnsRules = false;
+        QJsonArray proxyDomains;
+        QJsonArray proxyRuleSets;
+        QJsonArray proxySuffixes;
+        QJsonArray proxyKeywords;
+        QJsonArray proxyRegexes;
         // Direct IPs
         QStringList directIPSets;
         QStringList directIPCIDRs;
@@ -776,6 +778,26 @@ namespace Configs {
                 directRegexes << item.mid(6);
             }
             needDirectDnsRules = true;
+        }
+
+        sets = routeChain->get_proxy_sites();
+        for (const auto &item : sets) {
+            if (item.startsWith("ruleset:")) {
+                proxyRuleSets << item.mid(8);
+            }
+            if (item.startsWith("domain:")) {
+                proxyDomains << item.mid(7);
+            }
+            if (item.startsWith("suffix:")) {
+                proxySuffixes << item.mid(7);
+            }
+            if (item.startsWith("keyword:")) {
+                proxyKeywords << item.mid(8);
+            }
+            if (item.startsWith("regex:")) {
+                proxyRegexes << item.mid(6);
+            }
+            needProxyDnsRules = true;
         }
         
         directIPraw = routeChain->get_direct_ips();
@@ -1186,6 +1208,18 @@ namespace Configs {
             };
         }
 
+        if (needProxyDnsRules && !blockAll) {
+            dnsRules += QJsonObject{
+                {"rule_set", proxyRuleSets},
+                {"domain", proxyDomains},
+                {"domain_suffix", proxySuffixes},
+                {"domain_keyword", proxyKeywords},
+                {"domain_regex", proxyRegexes},
+                {"action", "route"},
+                {"server", "dns-remote"},
+            };
+        }
+
         // Underlying DNS
         auto dnsLocalAddress = dataStore->core_box_underlying_dns.isEmpty() ? "local" : dataStore->core_box_underlying_dns;
         auto dnsLocalObj = BuildDnsObject(dnsLocalAddress, dataStore->spmode_vpn);
@@ -1195,8 +1229,10 @@ namespace Configs {
         dns["servers"] = dnsServers;
         dns["rules"] = dnsRules;
         if (!blockAll) {
-            dns["final"] = dataStore->routing->dns_final_out_direct ? QStringLiteral("dns-direct")
-                                                                    : QStringLiteral("dns-remote");
+            const bool dnsFinalDirect = dataStore->routing->dns_final_out_direct ||
+                                        routeChain->defaultOutboundID == directID;
+            dns["final"] = dnsFinalDirect ? QStringLiteral("dns-direct")
+                                          : QStringLiteral("dns-remote");
         }
 
         if (dataStore->routing->use_dns_object) {

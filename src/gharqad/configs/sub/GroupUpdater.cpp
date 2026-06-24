@@ -583,10 +583,6 @@ namespace Subscription {
                         bean->stream->reality_pbk = Node2QString(reality["public-key"]);
                         bean->stream->reality_sid = Node2QString(reality["short-id"]);
                     }
-                    if (bean->flow.isEmpty() && !bean->stream->reality_pbk.isEmpty() &&
-                        bean->stream->network == "tcp") {
-                        bean->flow = QStringLiteral("xtls-rprx-vision");
-                    }
                     bean.reset();
                 } else if (type == "vmess") {
                     needFix = true;

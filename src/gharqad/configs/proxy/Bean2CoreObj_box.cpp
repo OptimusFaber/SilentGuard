@@ -238,9 +238,6 @@ namespace Configs {
                     };
                     if (fp.isEmpty()) fp = "chrome";
                 }
-                if (fp.isEmpty() && security == "tls") {
-                    fp = "chrome";
-                }
                 if (!fp.isEmpty()) {
                     tls["utls"] = QJsonObject{
                             {"enabled", true},
@@ -258,12 +255,8 @@ namespace Configs {
         }
 
         if (type == "vmess" || type == "vless") {
-            QString encoding = packet_encoding;
-            if (type == "vless" && encoding.isEmpty()) {
-                encoding = QStringLiteral("xudp");
-            }
-            if (!encoding.isEmpty()) {
-                outbound->insert("packet_encoding", encoding);
+            if (!packet_encoding.isEmpty()) {
+                outbound->insert("packet_encoding", packet_encoding);
             }
         }
     }
@@ -378,10 +371,6 @@ CoreObjOutboundBuildResult SocksBean::BuildCoreObjSingBox() const {
             } else if (flow == "none") {
                 // 不使用 flow
                 flow = "";
-            }
-            if (flow.isEmpty() && !stream->reality_pbk.trimmed().isEmpty() &&
-                (stream->network.isEmpty() || stream->network == "tcp")) {
-                flow = QStringLiteral("xtls-rprx-vision");
             }
             outbound["uuid"] = password.trimmed();
             add_non_empty(outbound, "flow", flow);

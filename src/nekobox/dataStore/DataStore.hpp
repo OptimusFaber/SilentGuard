@@ -54,7 +54,7 @@ namespace Configs {
         int current_route_id = 0;
 
         // DNS
-        QString remote_dns = "tls://8.8.8.8";
+        QString remote_dns = "https://dns.google/dns-query";
         QString remote_dns_strategy = "";
         QString direct_dns = "local";
         QString direct_dns_strategy = "";

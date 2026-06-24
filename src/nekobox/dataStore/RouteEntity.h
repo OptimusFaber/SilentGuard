@@ -175,6 +175,8 @@ namespace Configs {
 
         QStringList get_direct_sites();
 
+        QStringList get_proxy_sites();
+
         QStringList get_direct_ips();
 
         QString GetSimpleRules(simpleAction action);
