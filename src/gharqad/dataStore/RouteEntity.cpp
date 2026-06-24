@@ -2,6 +2,7 @@
 #include <winsock2.h>
 #endif
 
+#include <QSet>
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QFile>
@@ -616,6 +617,7 @@ namespace Configs {
 
         bool inRules = false;
         int ruleCounter = 0;
+        QSet<QString> seenGeoip;
         for (const auto &rawLine : content.split('\n')) {
             auto line = rawLine.trimmed();
             if (line.isEmpty() || line.startsWith('#') || line.startsWith(';'))
@@ -664,6 +666,11 @@ namespace Configs {
                 rule->domain_keyword << value;
                 chain->Rules << rule;
             } else if (type.compare(QStringLiteral("GEOIP"), Qt::CaseInsensitive) == 0) {
+                const QString geoKey =
+                    shadowrocketGeoRuleSet(value) + QLatin1Char(':') + QString::number(outbound);
+                if (seenGeoip.contains(geoKey))
+                    continue;
+                seenGeoip.insert(geoKey);
                 auto rule = makeShadowrocketRouteRule(outbound, ruleName);
                 rule->rule_set << shadowrocketGeoRuleSet(value);
                 chain->Rules << rule;
@@ -753,7 +760,8 @@ namespace Configs {
         auto res = std::make_shared<QStringList>();
         for (const auto& item: Rules) {
             for (const auto& ruleItem: item->rule_set) {
-                res->push_back(ruleItem);
+                if (!res->contains(ruleItem))
+                    res->push_back(ruleItem);
             }
         }
         return res;

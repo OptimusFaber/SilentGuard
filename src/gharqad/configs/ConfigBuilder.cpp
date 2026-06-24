@@ -17,6 +17,7 @@
 #include <QFile>
 #include <QFileInfo>
 #include <QDir>
+#include <QSet>
 #include <QStandardPaths>
 #include <QDateTime>
 
@@ -1031,17 +1032,28 @@ namespace Configs {
             }
 
             auto ruleSetArray = QJsonArray();
+            QSet<QString> addedRuleSetTags;
             for (const auto &item: *neededRuleSets) {
                 auto json_object = get_rule_set_json(item);
-                if (!json_object.isEmpty()){
-                    ruleSetArray += json_object;
-                }
+                if (json_object.isEmpty())
+                    continue;
+                const QString tag = json_object.value(QStringLiteral("tag")).toString();
+                if (!tag.isEmpty() && addedRuleSetTags.contains(tag))
+                    continue;
+                if (!tag.isEmpty())
+                    addedRuleSetTags.insert(tag);
+                ruleSetArray += json_object;
             }
             if (dataStore->adblock_enable && !blockAll) {
                 QString item = "nekobox-adblocksingbox";
                 auto json_object = get_rule_set_json(item);
                 if (!json_object.isEmpty()){
-                    ruleSetArray += json_object;
+                    const QString tag = json_object.value(QStringLiteral("tag")).toString();
+                    if (tag.isEmpty() || !addedRuleSetTags.contains(tag)) {
+                        if (!tag.isEmpty())
+                            addedRuleSetTags.insert(tag);
+                        ruleSetArray += json_object;
+                    }
                 }
             }
             routeObj["rule_set"] = ruleSetArray;
